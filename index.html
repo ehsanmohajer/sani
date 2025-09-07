@@ -279,61 +279,162 @@
     </div>
 
 
-    <script>
+  <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- UI ELEMENT TOGGLES ---
+
             // Mobile menu toggle
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
-            mobileMenuButton.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
-            });
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
 
             // Chatbot UI toggle
             const chatBubble = document.getElementById('chat-bubble');
             const chatWidget = document.getElementById('chat-widget');
-            const closeChat = document.getElementById('close-chat');
+            const closeChatButton = document.getElementById('close-chat');
 
-            function openChat() {
-                chatWidget.classList.remove('hidden');
-                setTimeout(() => {
-                    chatWidget.classList.remove('chat-widget-enter');
-                    chatWidget.classList.add('chat-widget-enter-active');
-                }, 10);
+            if (chatBubble && chatWidget) {
+                chatBubble.addEventListener('click', () => {
+                    chatWidget.classList.remove('hidden');
+                });
             }
             
-            function closeChatWidget() {
-                chatWidget.classList.remove('chat-widget-enter-active');
-                chatWidget.classList.add('chat-widget-exit-active');
-                setTimeout(() => {
+            if (closeChatButton && chatWidget) {
+                closeChatButton.addEventListener('click', () => {
                     chatWidget.classList.add('hidden');
-                    chatWidget.classList.remove('chat-widget-exit-active');
-                }, 300);
+                });
             }
 
-            chatBubble.addEventListener('click', openChat);
-            closeChat.addEventListener('click', closeChatWidget);
-
-
-            // Active nav link highlighting on scroll
+            // --- ACTIVE NAV LINK HIGHLIGHTING ---
             const sections = document.querySelectorAll('section');
             const navLinks = document.querySelectorAll('.nav-link');
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        navLinks.forEach(link => {
-                            link.classList.remove('nav-link-active');
-                            if (link.getAttribute('href').substring(1) === entry.target.id) {
-                                link.classList.add('nav-link-active');
-                            }
-                        });
+            // Only run observer logic if sections and nav links exist
+            if (sections.length > 0 && navLinks.length > 0) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            navLinks.forEach(link => {
+                                link.classList.remove('nav-link-active');
+                                if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                    link.classList.add('nav-link-active');
+                                }
+                            });
+                        }
+                    });
+                }, { rootMargin: '-30% 0px -70% 0px' });
+
+                sections.forEach(section => {
+                    observer.observe(section);
+                });
+            }
+
+            // --- CHATBOT LOGIC ---
+            const chatMessagesContainer = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+
+            // Function to add a message to the chat window
+            const addMessage = (message, sender) => {
+                // Defensive check: only proceed if the container exists
+                if (!chatMessagesContainer) return;
+
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('flex', 'mb-3');
+                
+                let innerHTML;
+                if (sender === 'user') {
+                    innerHTML = `
+                        <div class="ml-auto bg-gray-700 text-white p-3 rounded-lg max-w-xs">
+                            <p class="text-sm">${message}</p>
+                        </div>`;
+                } else { // AI or loading
+                     innerHTML = `
+                        <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs" ${sender === 'loading' ? 'id="loading-indicator"' : ''}>
+                            <p class="text-sm">${message}</p>
+                        </div>`;
+                }
+                messageElement.innerHTML = innerHTML;
+                chatMessagesContainer.appendChild(messageElement);
+                // Auto-scroll to the bottom to show the new message
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            };
+            
+            // Function to handle sending a message (main logic)
+            const handleSendMessage = async () => {
+                // Defensive check: ensure chat input exists before reading its value
+                if (!chatInput) return;
+
+                const message = chatInput.value.trim();
+                if (!message) return; // Don't send empty messages
+
+                addMessage(message, 'user');
+                chatInput.value = ''; // Clear the input field
+                addMessage('...', 'loading'); // Show typing indicator
+
+                try {
+                    // This calls your Netlify serverless function
+                    const response = await fetch('/.netlify/functions/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message }),
+                    });
+
+                    // Remove the loading indicator
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    if(loadingIndicator) loadingIndicator.parentElement.remove();
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                    addMessage(data.reply, 'ai');
+
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    if(loadingIndicator) loadingIndicator.parentElement.remove();
+                    addMessage(`Sorry, an error occurred: ${error.message}`, 'ai');
+                }
+            };
+
+            // --- EVENT LISTENERS FOR THE CHATBOT ---
+
+            // 1. Listen for clicks on the "Send" button
+            if (sendButton) {
+                sendButton.addEventListener('click', handleSendMessage);
+            }
+
+            // 2. Listen for pressing "Enter" in the input field
+            if (chatInput) {
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        handleSendMessage();
                     }
                 });
-            }, { rootMargin: '-30% 0px -70% 0px' });
-
-            sections.forEach(section => {
-                observer.observe(section);
-            });
+            }
+            
+            // 3. Listen for clicks on the quick-reply buttons
+            // This listener is on the container for all messages.
+            if (chatMessagesContainer) {
+                chatMessagesContainer.addEventListener('click', (e) => {
+                    // Check if the clicked element is a button inside the chat
+                    if(e.target.tagName === 'BUTTON' && e.target.classList.contains('quick-reply-btn')){
+                        const message = e.target.textContent;
+                        // Ensure chatInput exists before assigning to it
+                        if (chatInput) {
+                            chatInput.value = message; // Put the button text in the input
+                        }
+                        handleSendMessage(); // Send it immediately
+                    }
+                });
+            }
         });
     </script>
 </body>
