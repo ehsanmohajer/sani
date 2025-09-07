@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>John Doe - Project Specialist & AI Expert</title>
+    <title>Ehsan (Sani) Mohajer - AI & Project Specialist</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,37 +26,18 @@
         .nav-link-active {
             color: #3b82f6;
         }
-        .chat-widget-enter {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        .chat-widget-enter-active {
-            opacity: 1;
-            transform: translateY(0);
+        #chat-widget {
             transition: opacity 300ms, transform 300ms;
         }
-        .chat-widget-exit {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .chat-widget-exit-active {
+        #chat-widget.hidden {
             opacity: 0;
             transform: translateY(20px);
-            transition: opacity 300ms, transform 300ms;
+            pointer-events: none;
         }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1f2937;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
 <body>
@@ -228,7 +209,7 @@
     <!-- Footer -->
     <footer class="bg-[#111827] border-t border-gray-700">
         <div class="container mx-auto px-6 py-6 text-center text-gray-400">
-            <p>&copy; 2025 Ehsan (Sani) Mohajer. All Rights Reserved.</p>
+            <p>&copy; 2024 Ehsan (Sani) Mohajer. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -240,7 +221,7 @@
         </button>
 
         <!-- Chat Widget -->
-        <div id="chat-widget" class="hidden absolute bottom-[85px] right-0 w-[350px] h-[500px] bg-[#1f2937] border border-gray-700 rounded-lg shadow-2xl flex flex-col transition-all duration-300 chat-widget-enter">
+        <div id="chat-widget" class="hidden absolute bottom-[85px] right-0 w-[350px] h-[500px] bg-[#1f2937] border border-gray-700 rounded-lg shadow-2xl flex flex-col transition-all duration-300">
             <!-- Header -->
             <div class="bg-gray-800 p-4 rounded-t-lg flex justify-between items-center">
                 <div>
@@ -252,7 +233,7 @@
                 </button>
             </div>
             <!-- Messages -->
-            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4">
                 <!-- AI Message -->
                 <div class="flex">
                     <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">
@@ -261,16 +242,16 @@
                 </div>
                  <!-- Quick Reply Buttons -->
                  <div class="flex flex-wrap gap-2 pt-2">
-                    <button class="text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">Services</button>
-                    <button class="text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">View Portfolio</button>
-                    <button class="text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">Book a Call</button>
+                    <button class="quick-reply-btn text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">Services</button>
+                    <button class="quick-reply-btn text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">View Portfolio</button>
+                    <button class="quick-reply-btn text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">Book a Call</button>
                  </div>
             </div>
             <!-- Input -->
             <div class="p-4 border-t border-gray-700">
                 <div class="relative">
-                    <input type="text" placeholder="Type your message..." class="w-full bg-gray-800 text-white rounded-lg pl-4 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 p-1">
+                    <input id="chat-input" type="text" placeholder="Type your message..." class="w-full bg-gray-800 text-white rounded-lg pl-4 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="send-button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 p-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     </button>
                 </div>
@@ -280,164 +261,130 @@
 
 
   <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- UI ELEMENT TOGGLES ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- UI ELEMENT TOGGLES ---
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        }
 
-            // Mobile menu toggle
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (mobileMenuButton && mobileMenu) {
-                mobileMenuButton.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
+        const chatBubble = document.getElementById('chat-bubble');
+        const chatWidget = document.getElementById('chat-widget');
+        const closeChatButton = document.getElementById('close-chat');
+        if (chatBubble && chatWidget) {
+            chatBubble.addEventListener('click', () => chatWidget.classList.toggle('hidden'));
+        }
+        if (closeChatButton && chatWidget) {
+            closeChatButton.addEventListener('click', () => chatWidget.classList.add('hidden'));
+        }
 
-            // Chatbot UI toggle
-            const chatBubble = document.getElementById('chat-bubble');
-            const chatWidget = document.getElementById('chat-widget');
-            const closeChatButton = document.getElementById('close-chat');
-
-            if (chatBubble && chatWidget) {
-                chatBubble.addEventListener('click', () => {
-                    chatWidget.classList.remove('hidden');
-                });
-            }
-            
-            if (closeChatButton && chatWidget) {
-                closeChatButton.addEventListener('click', () => {
-                    chatWidget.classList.add('hidden');
-                });
-            }
-
-            // --- ACTIVE NAV LINK HIGHLIGHTING ---
-            const sections = document.querySelectorAll('section');
-            const navLinks = document.querySelectorAll('.nav-link');
-
-            // Only run observer logic if sections and nav links exist
-            if (sections.length > 0 && navLinks.length > 0) {
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            navLinks.forEach(link => {
-                                link.classList.remove('nav-link-active');
-                                if (link.getAttribute('href').substring(1) === entry.target.id) {
-                                    link.classList.add('nav-link-active');
-                                }
-                            });
-                        }
-                    });
-                }, { rootMargin: '-30% 0px -70% 0px' });
-
-                sections.forEach(section => {
-                    observer.observe(section);
-                });
-            }
-
-            // --- CHATBOT LOGIC ---
-            const chatMessagesContainer = document.getElementById('chat-messages');
-            const chatInput = document.getElementById('chat-input');
-            const sendButton = document.getElementById('send-button');
-
-            // Function to add a message to the chat window
-            const addMessage = (message, sender) => {
-                // Defensive check: only proceed if the container exists
-                if (!chatMessagesContainer) return;
-
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('flex', 'mb-3');
-                
-                let innerHTML;
-                if (sender === 'user') {
-                    innerHTML = `
-                        <div class="ml-auto bg-gray-700 text-white p-3 rounded-lg max-w-xs">
-                            <p class="text-sm">${message}</p>
-                        </div>`;
-                } else { // AI or loading
-                     innerHTML = `
-                        <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs" ${sender === 'loading' ? 'id="loading-indicator"' : ''}>
-                            <p class="text-sm">${message}</p>
-                        </div>`;
-                }
-                messageElement.innerHTML = innerHTML;
-                chatMessagesContainer.appendChild(messageElement);
-                // Auto-scroll to the bottom to show the new message
-                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
-            };
-            
-            // Function to handle sending a message (main logic)
-            const handleSendMessage = async () => {
-                // Defensive check: ensure chat input exists before reading its value
-                if (!chatInput) return;
-
-                const message = chatInput.value.trim();
-                if (!message) return; // Don't send empty messages
-
-                addMessage(message, 'user');
-                chatInput.value = ''; // Clear the input field
-                addMessage('...', 'loading'); // Show typing indicator
-
-                try {
-                    // This calls your Netlify serverless function
-                    const response = await fetch('/.netlify/functions/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message }),
-                    });
-
-                    // Remove the loading indicator
-                    const loadingIndicator = document.getElementById('loading-indicator');
-                    if(loadingIndicator) loadingIndicator.parentElement.remove();
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Network response was not ok');
+        // --- ACTIVE NAV LINK HIGHLIGHTING ---
+        const sections = document.querySelectorAll('main > section');
+        const navLinks = document.querySelectorAll('nav a.nav-link');
+        if (sections.length > 0 && navLinks.length > 0) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('nav-link-active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('nav-link-active');
+                            }
+                        });
                     }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+            sections.forEach(section => observer.observe(section));
+        }
 
-                    const data = await response.json();
-                    addMessage(data.reply, 'ai');
+        // --- CHATBOT LOGIC ---
+        const chatMessagesContainer = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const quickReplyContainer = document.querySelector('#chat-messages > div:last-child');
+        
+        const netlifyFunctionUrl = 'https://sanidev.netlify.app/.netlify/functions/chat';
 
-                } catch (error) {
-                    console.error('Error sending message:', error);
-                    const loadingIndicator = document.getElementById('loading-indicator');
-                    if(loadingIndicator) loadingIndicator.parentElement.remove();
-                    addMessage(`Sorry, an error occurred: ${error.message}`, 'ai');
-                }
-            };
+        const addMessage = (message, sender) => {
+            if (!chatMessagesContainer) return;
 
-            // --- EVENT LISTENERS FOR THE CHATBOT ---
+            // Remove old quick replies before adding new message
+            const oldReplies = chatMessagesContainer.querySelector('.quick-reply-container');
+            if (oldReplies) oldReplies.remove();
 
-            // 1. Listen for clicks on the "Send" button
-            if (sendButton) {
-                sendButton.addEventListener('click', handleSendMessage);
+            const messageWrapper = document.createElement('div');
+            messageWrapper.classList.add('flex', 'w-full');
+
+            let messageBubble;
+            if (sender === 'user') {
+                messageWrapper.classList.add('justify-end');
+                messageBubble = `<div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs"><p class="text-sm">${message}</p></div>`;
+            } else if (sender === 'ai') {
+                messageWrapper.classList.add('justify-start');
+                messageBubble = `<div class="bg-gray-700 text-white p-3 rounded-lg max-w-xs"><p class="text-sm">${message}</p></div>`;
+            } else { // loading
+                messageWrapper.classList.add('justify-start');
+                messageBubble = `<div id="loading-indicator" class="bg-gray-700 p-3 rounded-lg"><span class="animate-pulse">● ● ●</span></div>`;
             }
+            messageWrapper.innerHTML = messageBubble;
+            chatMessagesContainer.appendChild(messageWrapper);
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        };
 
-            // 2. Listen for pressing "Enter" in the input field
-            if (chatInput) {
-                chatInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
+        const handleSendMessage = async () => {
+            if (!chatInput) return;
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            chatInput.value = '';
+            addMessage('...', 'loading');
+
+            try {
+                const response = await fetch(netlifyFunctionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message }),
+                });
+                
+                const loadingIndicator = document.getElementById('loading-indicator');
+                if(loadingIndicator) loadingIndicator.parentElement.remove();
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok.');
+                }
+                const data = await response.json();
+                addMessage(data.reply, 'ai');
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                const loadingIndicator = document.getElementById('loading-indicator');
+                if(loadingIndicator) loadingIndicator.parentElement.remove();
+                addMessage(`Sorry, there was an error connecting to the AI.`, 'ai');
+            }
+        };
+        
+        if (sendButton) sendButton.addEventListener('click', handleSendMessage);
+        if (chatInput) chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSendMessage();
+        });
+
+        // Event listener for quick reply buttons
+        if (chatMessagesContainer) {
+            chatMessagesContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('quick-reply-btn')) {
+                    const message = e.target.textContent;
+                    if(chatInput) {
+                        chatInput.value = message;
                         handleSendMessage();
                     }
-                });
-            }
-            
-            // 3. Listen for clicks on the quick-reply buttons
-            // This listener is on the container for all messages.
-            if (chatMessagesContainer) {
-                chatMessagesContainer.addEventListener('click', (e) => {
-                    // Check if the clicked element is a button inside the chat
-                    if(e.target.tagName === 'BUTTON' && e.target.classList.contains('quick-reply-btn')){
-                        const message = e.target.textContent;
-                        // Ensure chatInput exists before assigning to it
-                        if (chatInput) {
-                            chatInput.value = message; // Put the button text in the input
-                        }
-                        handleSendMessage(); // Send it immediately
-                    }
-                });
-            }
-        });
-    </script>
+                }
+            });
+        }
+    });
+  </script>
 </body>
 </html>
-
 
