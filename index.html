@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>John Doe - Project Specialist & AI Expert</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: #e5e7eb;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at 30% 70%, rgba(29, 78, 216, 0.15) 0%, rgba(10, 10, 10, 0) 50%);
+        }
+        .glass-effect {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-link-active {
+            color: #3b82f6;
+        }
+        .chat-widget-enter {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .chat-widget-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .chat-widget-exit {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .chat-widget-exit-active {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 300ms, transform 300ms;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header id="header" class="glass-effect fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-xl font-bold text-white">Ehsan (Sani) Mohajer</a>
+            <nav class="hidden md:flex space-x-8 items-center">
+                <a href="#about" class="nav-link text-gray-300 hover:text-blue-500 transition duration-300">About</a>
+                <a href="#services" class="nav-link text-gray-300 hover:text-blue-500 transition duration-300">Services</a>
+                <a href="#portfolio" class="nav-link text-gray-300 hover:text-blue-500 transition duration-300">Portfolio</a>
+                <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">Contact Me</a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#about" class="block py-2 text-gray-300 hover:text-blue-500">About</a>
+            <a href="#services" class="block py-2 text-gray-300 hover:text-blue-500">Services</a>
+            <a href="#portfolio" class="block py-2 text-gray-300 hover:text-blue-500">Portfolio</a>
+            <a href="#contact" class="block mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-center">Contact Me</a>
+        </div>
+    </header>
+
+    <main class="pt-20">
+        <!-- Hero Section -->
+        <section id="home" class="hero-gradient py-24 md:py-32">
+            <div class="container mx-auto px-6 text-center">
+                <div class="max-w-4xl mx-auto">
+                    <span class="text-blue-400 font-semibold">PROJECT SPECIALIST & AI EXPERT</span>
+                    <h1 class="text-4xl md:text-6xl font-bold text-white mt-4 mb-6 leading-tight">Delivering AI Projects, Perfectly Managed</h1>
+                    <p class="text-lg md:text-xl text-gray-300 mb-8">
+                        I orchestrate complex AI initiatives from concept to launch, ensuring they deliver real business value on time and on budget.
+                    </p>
+                    <a href="#contact" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 inline-block">Book a Consultation</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="py-20 bg-[#111827]">
+            <div class="container mx-auto px-6">
+                <div class="lg:flex items-center">
+                    <div class="lg:w-1/2">
+                        <img src="https://placehold.co/600x600/111827/FFFFFF?text=EM" alt="Ehsan (Sani) Mohajer" class="rounded-lg shadow-2xl mx-auto">
+                    </div>
+                    <div class="lg:w-1/2 lg:pl-16 mt-10 lg:mt-0">
+                        <h2 class="text-3xl font-bold text-white mb-4">Bridging the Gap Between AI Potential and Business Reality</h2>
+                        <p class="text-gray-300 mb-4">
+                            With over 10 years in project management and a deep passion for artificial intelligence, I occupy a unique space: I don't just understand the technology, I know how to lead the teams that build it and ensure it aligns with strategic goals.
+                        </p>
+                        <p class="text-gray-300 mb-6">
+                            Many AI projects fail not because of flawed algorithms, but because of a disconnect between technical teams and business stakeholders. I am the translator and the conductor, ensuring clear communication, agile execution, and a relentless focus on delivering measurable results.
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <span class="bg-gray-700 text-gray-200 text-sm font-medium px-3 py-1 rounded-full">Agile & Scrum</span>
+                            <span class="bg-gray-700 text-gray-200 text-sm font-medium px-3 py-1 rounded-full">Python</span>
+                            <span class="bg-gray-700 text-gray-200 text-sm font-medium px-3 py-1 rounded-full">LLM Integration</span>
+                            <span class="bg-gray-700 text-gray-200 text-sm font-medium px-3 py-1 rounded-full">PMP Certified</span>
+                            <span class="bg-gray-700 text-gray-200 text-sm font-medium px-3 py-1 rounded-full">Chatbot Development</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-white">My Expertise</h2>
+                    <p class="text-gray-400 mt-2">How I can help you achieve your business goals.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Service Card 1 -->
+                    <div class="bg-[#111827] border border-gray-700 rounded-lg p-8 transform hover:-translate-y-2 transition-transform duration-300">
+                        <div class="bg-blue-600/20 text-blue-400 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">AI Strategy & Consultation</h3>
+                        <p class="text-gray-400">Identifying high-impact AI opportunities within your business and creating a clear roadmap for implementation.</p>
+                    </div>
+                    <!-- Service Card 2 -->
+                    <div class="bg-[#111827] border border-gray-700 rounded-lg p-8 transform hover:-translate-y-2 transition-transform duration-300">
+                        <div class="bg-blue-600/20 text-blue-400 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Technical Project Management</h3>
+                        <p class="text-gray-400">Leading your AI and software projects using agile methodologies to ensure on-time delivery and stakeholder alignment.</p>
+                    </div>
+                    <!-- Service Card 3 -->
+                    <div class="bg-[#111827] border border-gray-700 rounded-lg p-8 transform hover:-translate-y-2 transition-transform duration-300">
+                       <div class="bg-blue-600/20 text-blue-400 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M16 10H8.001c-1.2 0-2.261 1.02-2.48 2.203a2.5 2.5 0 0 0 2.48 2.797H16"/><path d="M12 20a8 8 0 1 0-8-8v1a8 8 0 0 0 8 8Z"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Custom AI Agent Development</h3>
+                        <p class="text-gray-400">Designing and managing the development of intelligent chatbots and AI agents to automate tasks and enhance customer experience.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Portfolio Section -->
+        <section id="portfolio" class="py-20 bg-[#111827]">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-white">Success Stories</h2>
+                    <p class="text-gray-400 mt-2">A selection of projects that delivered outstanding results.</p>
+                </div>
+                <div class="space-y-16">
+                    <!-- Portfolio Item 1 -->
+                    <div class="md:flex items-center gap-8">
+                        <div class="md:w-1/2">
+                            <img src="https://placehold.co/600x400/1F2937/FFFFFF?text=Project+1" alt="Project 1" class="rounded-lg shadow-lg">
+                        </div>
+                        <div class="md:w-1/2 mt-6 md:mt-0">
+                            <h3 class="text-2xl font-bold text-white">AI-Powered Customer Support Chatbot</h3>
+                            <p class="text-blue-400 font-medium mt-1 mb-4">SaaS Company</p>
+                            <p class="text-gray-300 mb-2"><strong class="text-white">Challenge:</strong> A fast-growing SaaS client was overwhelmed with repetitive customer support queries, leading to slow response times.</p>
+                            <p class="text-gray-300 mb-2"><strong class="text-white">Solution:</strong> I managed a cross-functional team to develop and deploy an LLM-powered chatbot trained on their knowledge base to handle tier-1 support questions instantly.</p>
+                             <p class="text-gray-300 mb-4"><strong class="text-white">Result:</strong> Achieved a <span class="text-blue-400 font-bold">40% reduction</span> in human-handled support tickets and a <span class="text-blue-400 font-bold">25% increase</span> in customer satisfaction scores within three months.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">LangChain</span>
+                                <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">OpenAI API</span>
+                                <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">Vector DB</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Portfolio Item 2 -->
+                    <div class="md:flex items-center gap-8 flex-row-reverse">
+                        <div class="md:w-1/2">
+                             <img src="https://placehold.co/600x400/1F2937/FFFFFF?text=Project+2" alt="Project 2" class="rounded-lg shadow-lg">
+                        </div>
+                        <div class="md:w-1/2 mt-6 md:mt-0">
+                            <h3 class="text-2xl font-bold text-white">Automated Financial Report Analysis</h3>
+                            <p class="text-blue-400 font-medium mt-1 mb-4">Fintech Firm</p>
+                            <p class="text-gray-300 mb-2"><strong class="text-white">Challenge:</strong> Analysts spent hundreds of hours manually extracting and analyzing data from quarterly earnings reports.</p>
+                            <p class="text-gray-300 mb-2"><strong class="text-white">Solution:</strong> I led a project to build an AI pipeline that automatically ingests PDF reports, extracts key financial metrics, performs sentiment analysis, and generates summary dashboards.</p>
+                            <p class="text-gray-300 mb-4"><strong class="text-white">Result:</strong> Reduced manual data entry by <span class="text-blue-400 font-bold">95%</span> and enabled analysts to focus on higher-value strategic insights, accelerating decision-making.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">Python</span>
+                                <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">Pandas</span>
+                                <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">NLP</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl font-bold text-white">Ready to Build the Future?</h2>
+                <p class="text-gray-400 mt-2 mb-8 max-w-2xl mx-auto">Let's discuss how my expertise in AI and project management can help you achieve your goals. I'm available for new projects and consultations.</p>
+                <a href="mailto:ehsanmohajer066@gmail.com" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-lg text-xl transition duration-300 inline-block">
+                    Get In Touch
+                </a>
+                <p class="text-gray-400 mt-6">Or call me at: <a href="tel:+358408189294" class="text-blue-400 hover:underline">+358 40 818 9294</a></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#111827] border-t border-gray-700">
+        <div class="container mx-auto px-6 py-6 text-center text-gray-400">
+            <p>&copy; 2025 Ehsan (Sani) Mohajer. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Chatbot UI -->
+    <div id="chat-container" class="fixed bottom-5 right-5 z-50">
+        <!-- Chat Bubble -->
+        <button id="chat-bubble" class="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0-8-8v1a8 8 0 0 0 8 8Z"/><path d="m12 14 4-4"/><path d="M16 10H8.001c-1.2 0-2.261 1.02-2.48 2.203a2.5 2.5 0 0 0 2.48 2.797H16"/></svg>
+        </button>
+
+        <!-- Chat Widget -->
+        <div id="chat-widget" class="hidden absolute bottom-[85px] right-0 w-[350px] h-[500px] bg-[#1f2937] border border-gray-700 rounded-lg shadow-2xl flex flex-col transition-all duration-300 chat-widget-enter">
+            <!-- Header -->
+            <div class="bg-gray-800 p-4 rounded-t-lg flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-white">AI Assistant</h3>
+                    <p class="text-xs text-green-400 flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-1.5"></span>Online</p>
+                </div>
+                <button id="close-chat" class="text-gray-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <!-- Messages -->
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- AI Message -->
+                <div class="flex">
+                    <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">
+                        <p class="text-sm">Hello! I'm Ehsan's AI assistant. I can answer questions about his services, portfolio, or help you book a meeting. How can I help?</p>
+                    </div>
+                </div>
+                 <!-- Quick Reply Buttons -->
+                 <div class="flex flex-wrap gap-2 pt-2">
+                    <button class="text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">Services</button>
+                    <button class="text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">View Portfolio</button>
+                    <button class="text-xs text-blue-300 bg-blue-600/30 border border-blue-500 rounded-full px-3 py-1 hover:bg-blue-600/50">Book a Call</button>
+                 </div>
+            </div>
+            <!-- Input -->
+            <div class="p-4 border-t border-gray-700">
+                <div class="relative">
+                    <input type="text" placeholder="Type your message..." class="w-full bg-gray-800 text-white rounded-lg pl-4 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Chatbot UI toggle
+            const chatBubble = document.getElementById('chat-bubble');
+            const chatWidget = document.getElementById('chat-widget');
+            const closeChat = document.getElementById('close-chat');
+
+            function openChat() {
+                chatWidget.classList.remove('hidden');
+                setTimeout(() => {
+                    chatWidget.classList.remove('chat-widget-enter');
+                    chatWidget.classList.add('chat-widget-enter-active');
+                }, 10);
+            }
+            
+            function closeChatWidget() {
+                chatWidget.classList.remove('chat-widget-enter-active');
+                chatWidget.classList.add('chat-widget-exit-active');
+                setTimeout(() => {
+                    chatWidget.classList.add('hidden');
+                    chatWidget.classList.remove('chat-widget-exit-active');
+                }, 300);
+            }
+
+            chatBubble.addEventListener('click', openChat);
+            closeChat.addEventListener('click', closeChatWidget);
+
+
+            // Active nav link highlighting on scroll
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('nav-link-active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('nav-link-active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-30% 0px -70% 0px' });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
+
+
