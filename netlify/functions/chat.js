@@ -249,20 +249,20 @@ exports.handler = async function(event, context) {
         let result = await chat.sendMessage(message);
 
         // --- HANDLE FUNCTION CALLS ---
-        while (true) {
-            const functionCalls = result.response.functionCalls();
-            if (!functionCalls || functionCalls.length === 0) break;
+    while (true) {
+        const functionCalls = result.response.functionCalls();
+        if (!functionCalls || functionCalls.length === 0) break;
 
-            for (const call of functionCalls) {
-                let apiResult = "";
-                if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
-                else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
+        for (const call of functionCalls) {
+            let apiResult = "";
+            if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
+            else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
 
-                result = await chat.sendMessage([
-                    { role: "function", parts: [{ text: apiResult }] }
-                ]);
-            }
-        }
+        // Send the function result back to the chat
+        result = await chat.sendMessage(apiResult);
+    }
+}
+
 
         const text = result.response.text();
         return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
