@@ -18,49 +18,59 @@ const resend = new Resend(RESEND_API_KEY);
 
 // --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI (V2) ---
 async function getEventTypeUri() {
-    try {
-        console.log("[DEBUG] Attempting to get Event Type URI...");
-        console.log(`[DEBUG] Using Calendly Key starting with: ${CALENDLY_API_KEY.substring(0, 8)}...`);
+  try {
+    console.log("[DEBUG] Attempting to get Event Type URI...");
+    console.log(`[DEBUG] Using Calendly Key starting with: ${CALENDLY_API_KEY.substring(0, 8)}...`);
 
-        const userResponse = await fetch('https://api.calendly.com/v2/users/me', {
-            headers: { 'Authorization': `Bearer ${CALENDLY_API_KEY}` }
-        });
+    // ✅ Use v1-style endpoint for Personal Access Token
+    const userResponse = await fetch('https://api.calendly.com/users/me', {
+      headers: {
+        Authorization: `Bearer ${CALENDLY_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-        if (!userResponse.ok) {
-            const errorText = await userResponse.text();
-            throw new Error(`Failed to fetch user from Calendly. Status: ${userResponse.status}. Body: ${errorText}`);
-        }
-        const userData = await userResponse.json();
-        const userUri = userData.resource.uri;
-        console.log(`[DEBUG] Successfully fetched user URI: ${userUri}`);
-
-        const eventTypesResponse = await fetch(`https://api.calendly.com/v2/event_types?user=${userUri}`, {
-             headers: { 'Authorization': `Bearer ${CALENDLY_API_KEY}` }
-        });
-        if (!eventTypesResponse.ok) {
-            const errorText = await eventTypesResponse.text();
-            throw new Error(`Failed to fetch event types from Calendly. Status: ${eventTypesResponse.status}. Body: ${errorText}`);
-        }
-        const eventTypesData = await eventTypesResponse.json();
-        console.log(`[DEBUG] Found ${eventTypesData.collection.length} event types for user.`);
-
-        const eventSlug = CALENDLY_EVENT_LINK.split('/').pop();
-        console.log(`[DEBUG] Searching for event slug: '${eventSlug}'`);
-
-        const eventType = eventTypesData.collection.find(et => et.slug === eventSlug);
-        if (!eventType) {
-             // Log all found slugs to help diagnose a mismatch
-            const foundSlugs = eventTypesData.collection.map(et => et.slug).join(', ');
-            console.error(`[DEBUG] Event slug '${eventSlug}' NOT FOUND. Available slugs are: [${foundSlugs}]`);
-            throw new Error(`Event type with slug '${eventSlug}' not found.`);
-        }
-        
-        console.log(`[DEBUG] Successfully found event type URI: ${eventType.uri}`);
-        return eventType.uri;
-    } catch (error) {
-        console.error("[DEBUG] Error in getEventTypeUri:", error);
-        throw error;
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      throw new Error(`Failed to fetch user from Calendly. Status: ${userResponse.status}. Body: ${errorText}`);
     }
+
+    const userData = await userResponse.json();
+    const userUri = userData.resource.uri;
+    console.log(`[DEBUG] Successfully fetched user URI: ${userUri}`);
+
+    // ✅ Event types are still under v2
+    const eventTypesResponse = await fetch(`https://api.calendly.com/v2/event_types?user=${userUri}`, {
+      headers: {
+        Authorization: `Bearer ${CALENDLY_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!eventTypesResponse.ok) {
+      const errorText = await eventTypesResponse.text();
+      throw new Error(`Failed to fetch event types from Calendly. Status: ${eventTypesResponse.status}. Body: ${errorText}`);
+    }
+
+    const eventTypesData = await eventTypesResponse.json();
+    console.log(`[DEBUG] Found ${eventTypesData.collection.length} event types for user.`);
+
+    const eventSlug = CALENDLY_EVENT_LINK.split('/').pop();
+    console.log(`[DEBUG] Searching for event slug: '${eventSlug}'`);
+
+    const eventType = eventTypesData.collection.find(et => et.slug === eventSlug);
+    if (!eventType) {
+      const foundSlugs = eventTypesData.collection.map(et => et.slug).join(', ');
+      console.error(`[DEBUG] Event slug '${eventSlug}' NOT FOUND. Available slugs are: [${foundSlugs}]`);
+      throw new Error(`Event type with slug '${eventSlug}' not found.`);
+    }
+
+    console.log(`[DEBUG] Successfully found event type URI: ${eventType.uri}`);
+    return eventType.uri;
+  } catch (error) {
+    console.error("[DEBUG] Error in getEventTypeUri:", error);
+    throw error;
+  }
 }
 
 // --- CALENDLY SCHEDULING FUNCTIONS (V2 API) ---
