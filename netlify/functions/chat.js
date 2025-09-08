@@ -76,40 +76,31 @@ async function getEventTypeUri() {
 // --- CALENDLY SCHEDULING FUNCTIONS ---
 async function getAvailableTimes() {
   try {
-    console.log("[DEBUG] Attempting to get available times...");
     const eventTypeUri = await getEventTypeUri();
-
-    // Define time window: now → 7 days from now
-    const startTime = new Date().toISOString();
-    const endTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const params = new URLSearchParams({
-      event_type: eventTypeUri,
-      start_time: startTime,
-      end_time: endTime
-    });
-
-    const slotsResponse = await fetch(`https://api.calendly.com/v2/event_type_available_times?${params.toString()}`, {
-      method: 'GET',
+    const bookingResponse = await fetch('https://api.calendly.com/scheduling_links', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${CALENDLY_API_KEY}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({
+        owner: eventTypeUri,
+        owner_type: "EventType",
+        max_event_count: 5
+      })
     });
 
-    if (!slotsResponse.ok) {
-      const errorText = await slotsResponse.text();
-      throw new Error(`Failed to fetch available times. Status: ${slotsResponse.status}. Body: ${errorText}`);
+    if (!bookingResponse.ok) {
+      const errorText = await bookingResponse.text();
+      throw new Error(`Failed to fetch available times. Status: ${bookingResponse.status}. Body: ${errorText}`);
     }
 
-    const slotsData = await slotsResponse.json();
-    console.log(`[DEBUG] Found ${slotsData.collection.length} available slots.`);
-
-    // Return up to 5 slots, only start_time
-    return slotsData.collection.slice(0, 5).map(slot => slot.start_time);
+    const bookingData = await bookingResponse.json();
+    const bookingUrl = bookingData.resource.booking_url;
+    return `Here is the scheduling link to pick a time: ${bookingUrl}`;
   } catch (error) {
     console.error("[DEBUG] Error in getAvailableTimes:", error.message);
-    return "I'm sorry, I'm having trouble accessing the calendar right now. Please try again in a moment.";
+    return "I'm sorry, I cannot fetch available times right now. Please use this link to schedule: " + CALENDLY_EVENT_LINK;
   }
 }
 
