@@ -223,8 +223,6 @@ Use the following information to answer questions. Do not make up information.
     - **Description:** A key innovation event in Central Finland where developers, students, and entrepreneurs co-create AI-powered products and services.
     - **Availability:** Open for **new consulting and project collaborations from November 2025 onward**, with focus areas in AI strategy, chatbot development, full-stack applications, and digital innovation.
     `;
-`;
-
 
 // --- NETLIFY HANDLER ---
 exports.handler = async function(event, context) {
