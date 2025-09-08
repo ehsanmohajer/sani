@@ -14,18 +14,14 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// --- SIMPLIFIED CALENDLY FUNCTIONS ---
+// --- SIMPLIFIED CALENDLY FUNCTION ---
+// This function's only job is to return a clear, direct sentence with the booking link.
 async function getAvailableTimes() {
-  console.log("[DEBUG] Returning Calendly link for booking...");
-  return `Great! Here is Ehsan’s Calendly link where you can see his live availability and choose a time that works for you: ${CALENDLY_EVENT_LINK}.`;
+  console.log("[DEBUG] Returning direct Calendly link for booking.");
+  return `Of course! You can see Ehsan's live availability and book a time that works for you using this link: ${CALENDLY_EVENT_LINK}`;
 }
 
-async function bookMeeting({ userName, userEmail }) {
-  console.log("[DEBUG] Returning pre-filled Calendly link.");
-  return `Excellent. To finalize your booking, please click this pre-filled link and confirm the time: ${CALENDLY_EVENT_LINK}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
-}
-
-// --- LEAD CAPTURE FUNCTION ---
+// --- LEAD CAPTURE FUNCTION (Unchanged) ---
 async function captureLead(message) {
   const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
   const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
@@ -46,23 +42,14 @@ async function captureLead(message) {
   }
 }
 
-// --- AI TOOLS ---
+// --- AI TOOLS (Simplified: only one tool for booking) ---
 const tools = [
   {
     functionDeclarations: [
-      { name: "getAvailableTimes", description: "Shares Ehsan's Calendly link for booking a 30-minute meeting. Use this as the first step when a user wants to book a meeting." },
       { 
-        name: "bookMeeting", 
-        description: "Provides a pre-filled Calendly link to finalize a meeting. Use this only AFTER you have successfully collected the user's full name and email address.", 
-        parameters: { 
-          type: "OBJECT", 
-          properties: { 
-            userName: { type: "STRING", description: "User's full name." }, 
-            userEmail: { type: "STRING", description: "User's email address." } 
-          }, 
-          required: ["userName", "userEmail"] 
-        } 
-      }
+        name: "getAvailableTimes", 
+        description: "Provides the user with Ehsan's public Calendly link so they can book a meeting. This is the only tool for scheduling." 
+      },
     ]
   }
 ];
@@ -80,7 +67,7 @@ exports.handler = async function(event, context) {
     if (!message) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
 
     await captureLead(message);
-
+    
     const knowledgeBase = `
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
@@ -150,7 +137,7 @@ exports.handler = async function(event, context) {
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Understood. I will follow the booking process instructions precisely and sequentially." }] }
+        { role: "model", parts: [{ text: "Understood. When asked to book a meeting, I will call the getAvailableTimes tool and provide the user with the direct Calendly link." }] }
       ]
     });
 
@@ -164,13 +151,11 @@ exports.handler = async function(event, context) {
 
       for (const call of functionCalls) {
         let apiResult;
+        // The loop now only needs to check for one tool
         if (call.name === "getAvailableTimes") {
           apiResult = await getAvailableTimes();
-        } else if (call.name === "bookMeeting") {
-          apiResult = await bookMeeting(call.args);
         }
         
-        // Add the result to our array in the correct format for the API
         functionResponses.push({
           functionResponse: {
             name: call.name,
@@ -194,4 +179,3 @@ exports.handler = async function(event, context) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
   }
 };
-
