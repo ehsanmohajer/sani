@@ -76,88 +76,6 @@ const tools = [
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools });
 
-   ChatGPT said:
-
-Got it! I’ve combined everything: the corrected function call loop, the knowledge base you provided, and the working Calendly link. Here’s the final chat.js file ready for deployment on Netlify:
-
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { Resend } = require('resend');
-
-// --- API KEYS FROM NETLIFY ENVIRONMENT ---
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const CALENDLY_EVENT_LINK = process.env.CALENDLY_EVENT_LINK;
-
-// --- INITIALIZE SERVICES ---
-if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set.");
-if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not set.");
-if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const resend = new Resend(RESEND_API_KEY);
-
-// --- CALENDLY FUNCTIONS ---
-async function getAvailableTimes() {
-    console.log("[DEBUG] Returning Calendly link for booking...");
-    return `Great! Here’s Ehsan’s Calendly link to choose a time that works for you: ${CALENDLY_EVENT_LINK}. Once you’ve booked, feel free to provide your name and email so we can follow up if needed.`;
-}
-
-async function bookMeeting({ dateTime, userEmail, userName }) {
-    console.log("[DEBUG] Booking via Calendly API is disabled. Returning direct link.");
-    return `You can finalize your meeting directly here: ${CALENDLY_EVENT_LINK}`;
-}
-
-// --- CAPTURE LEADS ---
-async function captureLead(message) {
-    const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
-    const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-    const foundEmail = message.match(emailRegex);
-    const foundPhone = message.match(phoneRegex);
-
-    if (foundEmail || foundPhone) {
-        const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
-        const subject = `New Lead Captured from Your Portfolio Bot!`;
-        const body = `<p>Hi Ehsan,</p>
-                      <p>Your AI assistant captured a new lead from your website.</p>
-                      <p><strong>Contact Info:</strong> ${contactInfo}</p>
-                      <p><strong>Full Message:</strong> "${message}"</p>
-                      <p>You may want to follow up with them soon.</p>`;
-        try {
-            await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject, html: body });
-            console.log("Lead capture email sent successfully.");
-        } catch (error) {
-            console.error("Error sending lead capture email:", error);
-        }
-    }
-}
-
-// --- TOOLS FOR AI ---
-const tools = [
-    {
-        functionDeclarations: [
-            { 
-                name: "getAvailableTimes", 
-                description: "Shares Ehsan's Calendly link for booking a 30-minute meeting."
-            },
-            { 
-                name: "bookMeeting", 
-                description: "Provides the Calendly link to finalize a meeting.", 
-                parameters: {
-                    type: "OBJECT", 
-                    properties: { 
-                        dateTime: { type: "STRING", description: "The ISO 8601 string of the chosen date and time for the meeting." }, 
-                        userEmail: { type: "STRING", description: "The user's email address." }, 
-                        userName: { type: "STRING", description: "The user's full name." } 
-                    }, 
-                    required: ["dateTime", "userEmail", "userName"] 
-                }
-            }
-        ]
-    }
-];
-
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools });
-
 // Knowledge base for AI
 const knowledgeBase = `
 You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
@@ -262,8 +180,6 @@ exports.handler = async function(event, context) {
         result = await chat.sendMessage(apiResult);
     }
 }
-
-
         const text = result.response.text();
         return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
 
