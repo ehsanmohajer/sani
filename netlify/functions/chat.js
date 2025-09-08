@@ -22,7 +22,6 @@ async function getAvailableTimes() {
 
 async function bookMeeting({ userName, userEmail }) {
   console.log("[DEBUG] Returning pre-filled Calendly link.");
-  // Refined Response: Clarifies the user's next step.
   return `Excellent. To finalize your booking, please click this pre-filled link and confirm the time: ${CALENDLY_EVENT_LINK}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
 }
 
@@ -82,7 +81,6 @@ exports.handler = async function(event, context) {
 
     await captureLead(message);
 
-    // Refined Knowledge Base with clearer, step-by-step booking instructions.
     const knowledgeBase = `
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
@@ -152,28 +150,43 @@ exports.handler = async function(event, context) {
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Understood. I will follow the booking process instructions precisely." }] }
+        { role: "model", parts: [{ text: "Understood. I will follow the booking process instructions precisely and sequentially." }] }
       ]
     });
 
     let result = await chat.sendMessage(message);
+    let response = result.response;
 
-    while (true) {
-      const functionCalls = result.response.functionCalls();
-      if (!functionCalls || functionCalls.length === 0) break;
+    // --- CORRECTED TOOL CALLING LOOP ---
+    while (response.functionCalls && response.functionCalls.length > 0) {
+      const functionCalls = response.functionCalls;
+      const functionResponses = [];
 
-      const toolResults = [];
       for (const call of functionCalls) {
         let apiResult;
-        if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
-        else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
-        toolResults.push({ functionName: call.name, response: { result: apiResult } });
+        if (call.name === "getAvailableTimes") {
+          apiResult = await getAvailableTimes();
+        } else if (call.name === "bookMeeting") {
+          apiResult = await bookMeeting(call.args);
+        }
+        
+        // Add the result to our array in the correct format for the API
+        functionResponses.push({
+          functionResponse: {
+            name: call.name,
+            response: {
+              content: apiResult,
+            },
+          },
+        });
       }
 
-      result = await chat.sendMessage(JSON.stringify([{ functionResponse: toolResults }]));
+      // Send the function responses back to the model
+      result = await chat.sendMessage(functionResponses);
+      response = result.response;
     }
 
-    const text = result.response.text();
+    const text = response.text();
     return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
 
   } catch (error) {
