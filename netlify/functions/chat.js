@@ -13,68 +13,41 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
+// The model is now initialized without tools, making it simpler
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-// --- CALENDLY FUNCTIONS ---
-async function getAvailableTimes() {
-    console.log("[DEBUG] Returning Calendly link for booking...");
-    return `Great! Here’s Ehsan’s Calendly link to choose a time that works for you: ${CALENDLY_EVENT_LINK}. Once you’ve booked, feel free to provide your name and email so we can follow up if needed.`;
-}
-
-async function bookMeeting({ dateTime, userEmail, userName }) {
-    console.log("[DEBUG] Booking via Calendly API is disabled. Returning direct link.");
-    return `You can finalize your meeting directly here: ${CALENDLY_EVENT_LINK}`;
-}
-
-// --- CAPTURE LEADS ---
+// --- LEAD CAPTURE FUNCTION (Unchanged) ---
 async function captureLead(message) {
-    const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
-    const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-    const foundEmail = message.match(emailRegex);
-    const foundPhone = message.match(phoneRegex);
+  const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
+  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+  const foundEmail = message.match(emailRegex);
+  const foundPhone = message.match(phoneRegex);
 
-    if (foundEmail || foundPhone) {
-        const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
-        const subject = `New Lead Captured from Your Portfolio Bot!`;
-        const body = `<p>Hi Ehsan,</p>
-                      <p>Your AI assistant captured a new lead from your website.</p>
-                      <p><strong>Contact Info:</strong> ${contactInfo}</p>
-                      <p><strong>Full Message:</strong> "${message}"</p>
-                      <p>You may want to follow up with them soon.</p>`;
-        try {
-            await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject, html: body });
-            console.log("Lead capture email sent successfully.");
-        } catch (error) {
-            console.error("Error sending lead capture email:", error);
-        }
+  if (foundEmail || foundPhone) {
+    const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
+    const subject = `New Lead Captured from Your Portfolio Bot!`;
+    const body = `<p>Hi Ehsan,</p><p>Your AI assistant captured a new lead from your website.</p><p><strong>Contact Info:</strong> ${contactInfo}</p><p><strong>Message:</strong> "${message}"</p>`;
+
+    try {
+      await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject, html: body });
+      console.log("Lead capture email sent successfully.");
+    } catch (error) {
+      console.error("Error sending lead capture email:", error);
     }
+  }
 }
 
-// --- TOOLS FOR AI ---
-const tools = [
-    {
-        functionDeclarations: [
-            { 
-                name: "getAvailableTimes", 
-                description: "Shares Ehsan's Calendly link for booking a 30-minute meeting."
-            },
-            { 
-                name: "bookMeeting", 
-                description: "Provides the Calendly link to finalize a meeting.", 
-                parameters: {
-                    type: "OBJECT", 
-                    properties: { 
-                        dateTime: { type: "STRING", description: "The ISO 8601 string of the chosen date and time for the meeting." }, 
-                        userEmail: { type: "STRING", description: "The user's email address." }, 
-                        userName: { type: "STRING", description: "The user's full name." } 
-                    }, 
-                    required: ["dateTime", "userEmail", "userName"] 
-                }
-            }
-        ]
-    }
-];
+// --- NETLIFY FUNCTION HANDLER ---
+exports.handler = async function(event, context) {
+  const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Content-Type': 'application/json' };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
+  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools });
+  try {
+    const { message } = JSON.parse(event.body);
+    if (!message) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
+
+await captureLead(message);
 
 // Knowledge base for AI
 const knowledgeBase = `
@@ -143,48 +116,21 @@ Use the following information to answer questions. Do not make up information.
 - Availability: Open for new consulting and project collaborations from November 2025 onward, with focus areas in AI strategy, chatbot development, full-stack applications, and digital innovation.
 `;
 
-// --- NETLIFY HANDLER ---
-exports.handler = async function(event, context) {
-    const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Content-Type': 'application/json' };
-    if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
-    if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+const chat = model.startChat({
+      history: [
+        { role: "user", parts: [{ text: knowledgeBase }] },
+        { role: "model", parts: [{ text: "Understood. I will answer questions based on the provided information, and when asked to book a meeting, I will provide the direct Calendly link." }] }
+      ]
+    });
 
-    try {
-        const { message } = JSON.parse(event.body);
-        if (!message) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
+    const result = await chat.sendMessage(message);
+    const response = result.response;
+    const text = response.text();
 
-        // Capture leads
-        await captureLead(message);
+    return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
 
-        // Start AI chat
-        const chat = model.startChat({
-            history: [
-                { role: "user", parts: [{ text: knowledgeBase }] },
-                { role: "model", parts: [{ text: "Understood. I am ready to assist potential clients and can share Ehsan's Calendly link for meetings." }] }
-            ],
-        });
-
-        let result = await chat.sendMessage(message);
-
-        // --- HANDLE FUNCTION CALLS ---
-    while (true) {
-        const functionCalls = result.response.functionCalls();
-        if (!functionCalls || functionCalls.length === 0) break;
-
-        for (const call of functionCalls) {
-            let apiResult = "";
-            if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
-            else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
-
-        // Send the function result back to the chat
-        result = await chat.sendMessage(apiResult);
-    }
-}
-        const text = result.response.text();
-        return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
-
-    } catch (error) {
-        console.error("Error in Netlify function:", error);
-        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
-    }
+  } catch (error) {
+    console.error("Error in Netlify function:", error);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
+  }
 };
