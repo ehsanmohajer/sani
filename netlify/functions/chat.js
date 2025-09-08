@@ -1,14 +1,19 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { Resend } = require('resend'); // Import the Resend library
 
-const API_KEY = process.env.GEMINI_API_KEY;
+// --- API KEYS FROM NETLIFY ENVIRONMENT ---
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY; // Get the new Resend API key
 
-if (!API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable not set.");
-}
+// --- INITIALIZE SERVICES ---
+if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY environment variable not set.");
+if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY environment variable not set.");
 
-const genAI = new GoogleGenerativeAI(API_KEY);
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+const resend = new Resend(RESEND_API_KEY);
 
+// --- MAIN SERVERLESS FUNCTION ---
 exports.handler = async function (event, context) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -26,13 +31,15 @@ exports.handler = async function (event, context) {
 
   try {
     const { message } = JSON.parse(event.body);
-
     if (!message) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
     }
 
-    // --- START OF THE KNOWLEDGE BASE ---
-    // This is where you "train" the AI. Update the text inside the backticks (` `).
+    // --- NEW: LEAD CAPTURE LOGIC ---
+    // This function checks for contact info and sends you an email in the background.
+    await captureLead(message); 
+    // The chat continues regardless of whether a lead was captured.
+
     const knowledgeBase = `
       You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
       Your goal is to help potential clients, collaborators, and organizations understand his skills and encourage them to connect or book a consultation.
@@ -87,46 +94,60 @@ exports.handler = async function (event, context) {
 
       **UPCOMING EVENTS & NEWS:**
       - **Event:** AI Hackathon at Viitasaari.  
-      - **Date:** October 29,09,2025 ~ 01,10,2025.  
+      - **Date:** October 25–26, 2025.  
       - **Role:** Mentor and judge for the AI/ML category.  
       - **Description:** A key innovation event in Central Finland where developers, students, and entrepreneurs co-create AI-powered products and services.  
       - **Availability:** Open for **new consulting and project collaborations from November 2025 onward**, with focus areas in AI strategy, chatbot development, full-stack applications, and digital innovation.  
     `;
-    // --- END OF THE KNOWLEDGE BASE ---
     
     const chat = model.startChat({
-        history: [
-          {
-            role: "user",
-            parts: [{ text: knowledgeBase }], // We pass all your details here
-          },
-          {
-            role: "model",
-            parts: [{ text: "Understood. I have been briefed on Ehsan's details and upcoming events. I am ready to assist potential clients professionally and concisely." }],
-          },
-        ],
-        generationConfig: {
-          maxOutputTokens: 250, // Increased tokens for potentially longer answers
-        },
+        history: [{ role: "user", parts: [{ text: knowledgeBase }] }, { role: "model", parts: [{ text: "Understood. I am ready to assist potential clients." }] }],
+        generationConfig: { maxOutputTokens: 250 },
     });
 
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ reply: text }),
-    };
+    return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
 
   } catch (error) {
     console.error("Error in Netlify function:", error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Failed to get response from AI' }),
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
   }
 };
 
+// --- NEW: HELPER FUNCTION TO SEND EMAIL NOTIFICATION ---
+async function captureLead(message) {
+  // Simple regex to find emails and phone numbers (can be improved for more complex cases)
+  const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
+  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+
+  const foundEmail = message.match(emailRegex);
+  const foundPhone = message.match(phoneRegex);
+
+  if (foundEmail || foundPhone) {
+    const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
+    const subject = `New Lead Captured from Your Portfolio Bot!`;
+    const body = `
+      <p>Hi Ehsan,</p>
+      <p>Your AI assistant captured a new lead from your website.</p>
+      <p><strong>Contact Info:</strong> ${contactInfo}</p>
+      <p><strong>Full Message:</strong> "${message}"</p>
+      <p>You may want to follow up with them soon.</p>
+    `;
+
+    try {
+      await resend.emails.send({
+        from: 'onboarding@resend.dev', // This is a default sending address for Resend
+        to: 'ehsanmohajer066@gmail.com', // Your email address
+        subject: subject,
+        html: body,
+      });
+      console.log("Lead capture email sent successfully.");
+    } catch (error) {
+      console.error("Error sending lead capture email:", error);
+      // We don't throw an error here because the chat should continue even if the email fails.
+    }
+  }
+}
