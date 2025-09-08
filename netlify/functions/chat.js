@@ -17,8 +17,14 @@ const resend = new Resend(RESEND_API_KEY);
 // --- SIMPLIFIED CALENDLY FUNCTION ---
 // This function's only job is to return a clear, direct sentence with the booking link.
 async function getAvailableTimes() {
-  console.log("[DEBUG] Returning direct Calendly link for booking.");
-  return `Of course! You can see Ehsan's live availability and book a time that works for you using this link: ${CALENDLY_EVENT_LINK}`;
+  try {
+    console.log("[DEBUG] Returning fixed Calendly link...");
+    // Simply return the link stored in your environment variable
+    return `Here's Ehsan's Calendly link to schedule a meeting: ${CALENDLY_EVENT_LINK}`;
+  } catch (error) {
+    console.error("[DEBUG] Error in getAvailableTimes:", error.message);
+    return "I'm sorry, I cannot provide the scheduling link right now. Please use this link instead: " + CALENDLY_EVENT_LINK;
+  }
 }
 
 // --- LEAD CAPTURE FUNCTION (Unchanged) ---
