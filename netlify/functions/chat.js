@@ -17,12 +17,13 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
 // --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI ---
+// --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI ---
 async function getEventTypeUri() {
   try {
     console.log("[DEBUG] Attempting to get Event Type URI...");
     console.log(`[DEBUG] Using Calendly Key starting with: ${CALENDLY_API_KEY.substring(0, 8)}...`);
 
-    // Use v2 endpoint for "users/me"
+    // ✅ v2 users endpoint
     const userResponse = await fetch('https://api.calendly.com/users/me', {
       headers: {
         Authorization: `Bearer ${CALENDLY_API_KEY}`,
@@ -39,8 +40,8 @@ async function getEventTypeUri() {
     const userUri = userData.resource.uri;
     console.log(`[DEBUG] Successfully fetched user URI: ${userUri}`);
 
-    // ✅ Correct event_types path
-    const eventTypesResponse = await fetch(`https://api.calendly.com/event_types?user=${encodeURIComponent(userUri)}`, {
+    // ✅ Get event types for the user
+    const eventTypesResponse = await fetch(`https://api.calendly.com/event_types?user=${userUri}`, {
       headers: {
         Authorization: `Bearer ${CALENDLY_API_KEY}`,
         'Content-Type': 'application/json'
@@ -67,6 +68,7 @@ async function getEventTypeUri() {
 
     console.log(`[DEBUG] Successfully found event type URI: ${eventType.uri}`);
     return eventType.uri;
+
   } catch (error) {
     console.error("[DEBUG] Error in getEventTypeUri:", error);
     throw error;
@@ -74,9 +76,13 @@ async function getEventTypeUri() {
 }
 
 // --- CALENDLY SCHEDULING FUNCTIONS ---
+
+// Instead of using deprecated event_type_available_times endpoint
 async function getAvailableTimes() {
   try {
+    console.log("[DEBUG] Generating scheduling link for available times...");
     const eventTypeUri = await getEventTypeUri();
+
     const bookingResponse = await fetch('https://api.calendly.com/scheduling_links', {
       method: 'POST',
       headers: {
@@ -92,12 +98,15 @@ async function getAvailableTimes() {
 
     if (!bookingResponse.ok) {
       const errorText = await bookingResponse.text();
-      throw new Error(`Failed to fetch available times. Status: ${bookingResponse.status}. Body: ${errorText}`);
+      throw new Error(`Failed to generate scheduling link. Status: ${bookingResponse.status}. Body: ${errorText}`);
     }
 
     const bookingData = await bookingResponse.json();
     const bookingUrl = bookingData.resource.booking_url;
+    console.log(`[DEBUG] Scheduling link generated: ${bookingUrl}`);
+
     return `Here is the scheduling link to pick a time: ${bookingUrl}`;
+
   } catch (error) {
     console.error("[DEBUG] Error in getAvailableTimes:", error.message);
     return "I'm sorry, I cannot fetch available times right now. Please use this link to schedule: " + CALENDLY_EVENT_LINK;
@@ -106,38 +115,37 @@ async function getAvailableTimes() {
 
 async function bookMeeting({ dateTime, userEmail, userName }) {
   try {
+    console.log("[DEBUG] Creating scheduling link for booking...");
     const eventTypeUri = await getEventTypeUri();
 
-    const bookingResponse = await fetch('https://api.calendly.com/v2/scheduling_links', {
+    const bookingResponse = await fetch('https://api.calendly.com/scheduling_links', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${CALENDLY_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        max_event_count: 1,
         owner: eventTypeUri,
-        owner_type: "EventType"
+        owner_type: "EventType",
+        max_event_count: 1
       })
     });
 
-    if (!bookingResponse.ok) {
-      const errorText = await bookingResponse.text();
-      throw new Error(`Failed to create booking link. Status: ${bookingResponse.status}. Body: ${errorText}`);
-    }
+    if (!bookingResponse.ok) throw new Error('Failed to create Calendly booking link.');
 
     const bookingData = await bookingResponse.json();
     const bookingUrl = bookingData.resource.booking_url;
 
     const finalUrl = `${bookingUrl}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
-    return `Great! I've prepared a booking link for you. Please confirm the time here: ${finalUrl}. Ehsan has also been notified.`;
+    console.log(`[DEBUG] Final booking URL: ${finalUrl}`);
+
+    return `Great! I've prepared a booking link for you to confirm the time: ${finalUrl}. Ehsan has also been notified of your request.`;
+
   } catch (error) {
     console.error("Error booking Calendly meeting:", error.message);
     return "I'm sorry, there was an error with the booking system. Please use this link to book directly: " + CALENDLY_EVENT_LINK;
   }
 }
-
-
 
 async function captureLead(message) {
   const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
