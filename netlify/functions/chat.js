@@ -14,20 +14,24 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// --- SIMPLIFIED CALENDLY FUNCTION ---
-// This function's only job is to return a clear, direct sentence with the booking link.
+// --- CALENDLY FUNCTIONS ---
+// Returns the public Calendly link
 async function getAvailableTimes() {
+  return `Here's Ehsan's Calendly link to schedule a meeting: ${CALENDLY_EVENT_LINK}`;
+}
+
+// Returns a personalized Calendly link with name & email
+async function bookMeeting({ userName, userEmail }) {
   try {
-    console.log("[DEBUG] Returning fixed Calendly link...");
-    // Simply return the link stored in your environment variable
-    return `Here's Ehsan's Calendly link to schedule a meeting: ${CALENDLY_EVENT_LINK}`;
-  } catch (error) {
-    console.error("[DEBUG] Error in getAvailableTimes:", error.message);
-    return "I'm sorry, I cannot provide the scheduling link right now. Please use this link instead: " + CALENDLY_EVENT_LINK;
+    const personalizedLink = `${CALENDLY_EVENT_LINK}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
+    return `Great! I've prepared a personalized booking link for you: ${personalizedLink}. Ehsan has been notified of your request.`;
+  } catch (err) {
+    console.error("Error in bookMeeting:", err);
+    return `I'm sorry, there was an error creating your booking link. Please use this link directly: ${CALENDLY_EVENT_LINK}`;
   }
 }
 
-// --- LEAD CAPTURE FUNCTION (Unchanged) ---
+// --- LEAD CAPTURE ---
 async function captureLead(message) {
   const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
   const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
@@ -48,21 +52,33 @@ async function captureLead(message) {
   }
 }
 
-// --- AI TOOLS (Simplified: only one tool for booking) ---
+// --- AI TOOLS ---
 const tools = [
   {
     functionDeclarations: [
       { 
         name: "getAvailableTimes", 
-        description: "Provides the user with Ehsan's public Calendly link so they can book a meeting. This is the only tool for scheduling." 
+        description: "Provides Ehsan's public Calendly link for scheduling a meeting." 
       },
+      { 
+        name: "bookMeeting",
+        description: "Creates a personalized Calendly booking link after the user provides name and email.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            userName: { type: "STRING", description: "User's full name" },
+            userEmail: { type: "STRING", description: "User's email" }
+          },
+          required: ["userName", "userEmail"]
+        }
+      }
     ]
   }
 ];
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools });
 
-// --- NETLIFY FUNCTION HANDLER ---
+// --- NETLIFY HANDLER ---
 exports.handler = async function(event, context) {
   const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
@@ -73,6 +89,7 @@ exports.handler = async function(event, context) {
     if (!message) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
 
     await captureLead(message);
+
     
     const knowledgeBase = `
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
@@ -143,45 +160,33 @@ exports.handler = async function(event, context) {
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Understood. When asked to book a meeting, I will call the getAvailableTimes tool and provide the user with the direct Calendly link." }] }
+        { role: "model", parts: [{ text: "Ready to assist. I can provide Calendly links and personalized booking links using my tools." }] }
       ]
     });
 
     let result = await chat.sendMessage(message);
     let response = result.response;
 
-    // --- CORRECTED TOOL CALLING LOOP ---
     while (response.functionCalls && response.functionCalls.length > 0) {
       const functionCalls = response.functionCalls;
       const functionResponses = [];
 
       for (const call of functionCalls) {
         let apiResult;
-        // The loop now only needs to check for one tool
-        if (call.name === "getAvailableTimes") {
-          apiResult = await getAvailableTimes();
-        }
-        
-        functionResponses.push({
-          functionResponse: {
-            name: call.name,
-            response: {
-              content: apiResult,
-            },
-          },
-        });
+        if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
+        else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
+
+        functionResponses.push({ functionName: call.name, response: apiResult });
       }
 
-      // Send the function responses back to the model
-      result = await chat.sendMessage(functionResponses);
+      result = await chat.sendMessage(JSON.stringify(functionResponses));
       response = result.response;
     }
 
-    const text = response.text();
-    return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ reply: response.text() }) };
 
-  } catch (error) {
-    console.error("Error in Netlify function:", error);
+  } catch (err) {
+    console.error("Error in Netlify function:", err);
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
   }
 };
