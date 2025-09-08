@@ -14,84 +14,81 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// --- CALENDLY FUNCTIONS ---
+// --- SIMPLIFIED CALENDLY FUNCTIONS ---
+
+// Instead of fetching available slots via API, just return the Calendly link
 async function getAvailableTimes() {
-  return `Hello! Here's Ehsan's Calendly link to schedule a meeting: ${CALENDLY_EVENT_LINK}\n\nOnce you have selected a time, please provide your full name and email so I can generate a personalized booking link for you.`;
+    console.log("[DEBUG] Returning Calendly link for booking...");
+    return `Great! Here’s Ehsan’s Calendly link to choose a time that works for you: ${CALENDLY_EVENT_LINK}. Once you’ve booked, feel free to provide your name and email so we can follow up if needed.`;
 }
 
-async function bookMeeting({ userName, userEmail }) {
-  try {
-    const personalizedLink = `${CALENDLY_EVENT_LINK}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
-    return `Thank you, ${userName}! Here is your personalized booking link: ${personalizedLink}\n\nEhsan has been notified of your request.`;
-  } catch (err) {
-    console.error("Error in bookMeeting:", err);
-    return `I'm sorry, there was an error creating your personalized booking link. Please use the general link directly: ${CALENDLY_EVENT_LINK}`;
-  }
+// Booking API is not used; just return the link
+async function bookMeeting({ dateTime, userEmail, userName }) {
+    console.log("[DEBUG] Booking via Calendly API is disabled. Returning direct link.");
+    return `You can finalize your meeting directly here: ${CALENDLY_EVENT_LINK}`;
 }
 
-// --- LEAD CAPTURE ---
+// --- CAPTURE LEADS ---
 async function captureLead(message) {
-  const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
-  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-  const foundEmail = message.match(emailRegex);
-  const foundPhone = message.match(phoneRegex);
-
-  if (foundEmail || foundPhone) {
-    const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
-    const subject = `New Lead Captured from Portfolio Bot`;
-    const body = `<p>Hi Ehsan,</p>
-                  <p>Your AI assistant captured a new lead from your website.</p>
-                  <p><strong>Contact Info:</strong> ${contactInfo}</p>
-                  <p><strong>Message:</strong> "${message}"</p>`;
-
-    try {
-      await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject, html: body });
-      console.log("Lead capture email sent successfully.");
-    } catch (error) {
-      console.error("Error sending lead capture email:", error);
+    const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
+    const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+    const foundEmail = message.match(emailRegex);
+    const foundPhone = message.match(phoneRegex);
+    if (foundEmail || foundPhone) {
+        const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
+        const subject = `New Lead Captured from Your Portfolio Bot!`;
+        const body = `<p>Hi Ehsan,</p><p>Your AI assistant captured a new lead from your website.</p><p><strong>Contact Info:</strong> ${contactInfo}</p><p><strong>Full Message:</strong> "${message}"</p><p>You may want to follow up with them soon.</p>`;
+        try {
+            await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject: subject, html: body });
+            console.log("Lead capture email sent successfully.");
+        } catch (error) {
+            console.error("Error sending lead capture email:", error);
+        }
     }
-  }
 }
 
-// --- AI TOOLS ---
+// --- TOOLS FOR AI ---
 const tools = [
-  {
-    functionDeclarations: [
-      { 
-        name: "getAvailableTimes", 
-        description: "Provides Ehsan's public Calendly link for scheduling a meeting." 
-      },
-      { 
-        name: "bookMeeting",
-        description: "Creates a personalized Calendly booking link after the user provides name and email.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            userName: { type: "STRING", description: "User's full name" },
-            userEmail: { type: "STRING", description: "User's email" }
-          },
-          required: ["userName", "userEmail"]
-        }
-      }
-    ]
-  }
+    {
+        functionDeclarations: [
+            { 
+                name: "getAvailableTimes", 
+                description: "Shares Ehsan's Calendly link for booking a 30-minute meeting."
+            },
+            { 
+                name: "bookMeeting", 
+                description: "Provides the Calendly link to finalize a meeting.", 
+                parameters: {
+                    type: "OBJECT", 
+                    properties: { 
+                        dateTime: { type: "STRING", description: "The ISO 8601 string of the chosen date and time for the meeting." }, 
+                        userEmail: { type: "STRING", description: "The user's email address." }, 
+                        userName: { type: "STRING", description: "The user's full name." } 
+                    }, 
+                    required: ["dateTime", "userEmail", "userName"] 
+                }
+            }
+        ]
+    }
 ];
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools });
 
 // --- NETLIFY HANDLER ---
-exports.handler = async function(event, context) {
-  const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Content-Type': 'application/json' };
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+exports.handler = async function (event, context) {
+    const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Content-Type': 'application/json' };
+    if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers };
+    if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) };
 
-  try {
-    const { message } = JSON.parse(event.body);
-    if (!message) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
+    try {
+        const { message } = JSON.parse(event.body);
+        if (!message) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Message is required' }) };
 
-    await captureLead(message);
+        // Capture leads
+        await captureLead(message);
 
-    const knowledgeBase = `
+        // Knowledge base for AI
+        const knowledgeBase = `
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
     Use the following information to answer questions. Do not make up information.
@@ -157,36 +154,39 @@ exports.handler = async function(event, context) {
     - **Availability:** Open for **new consulting and project collaborations from November 2025 onward**, with focus areas in AI strategy, chatbot development, full-stack applications, and digital innovation.
     `;
 
-    const chat = model.startChat({
-      history: [
-        { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Ready to assist. I can provide Calendly links and personalized booking links using my tools." }] }
-      ]
-    });
+        const chat = model.startChat({
+            history: [
+                { role: "user", parts: [{ text: knowledgeBase }] },
+                { role: "model", parts: [{ text: "Understood. I am ready to assist potential clients and can share Ehsan's Calendly link for meetings." }] }
+            ],
+        });
 
-    let result = await chat.sendMessage(message);
-    let response = result.response;
+        let result = await chat.sendMessage(message);
 
-    while (response.functionCalls && response.functionCalls.length > 0) {
-      const functionCalls = response.functionCalls;
-      const functionResponses = [];
+        while (true) {
+            const functionCalls = result.response.functionCalls();
+            if (!functionCalls || functionCalls.length === 0) break;
 
-      for (const call of functionCalls) {
-        let apiResult;
-        if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
-        else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
+            const toolResults = [];
+            for (const call of functionCalls) {
+                let apiResult;
+                if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
+                else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
 
-        functionResponses.push({ functionName: call.name, response: apiResult });
-      }
+                toolResults.push({
+                    functionName: call.name,
+                    response: { result: apiResult },
+                });
+            }
 
-      result = await chat.sendMessage(JSON.stringify(functionResponses));
-      response = result.response;
+            result = await chat.sendMessage(JSON.stringify([{ functionResponse: toolResults }]));
+        }
+
+        const text = result.response.text();
+        return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
+
+    } catch (error) {
+        console.error("Error in Netlify function:", error);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
     }
-
-    return { statusCode: 200, headers, body: JSON.stringify({ reply: response.text() }) };
-
-  } catch (err) {
-    console.error("Error in Netlify function:", err);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
-  }
 };
