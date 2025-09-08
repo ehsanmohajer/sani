@@ -15,19 +15,17 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
 // --- CALENDLY FUNCTIONS ---
-// Returns the public Calendly link
 async function getAvailableTimes() {
-  return `Here's Ehsan's Calendly link to schedule a meeting: ${CALENDLY_EVENT_LINK}`;
+  return `Hello! Here's Ehsan's Calendly link to schedule a meeting: ${CALENDLY_EVENT_LINK}\n\nOnce you have selected a time, please provide your full name and email so I can generate a personalized booking link for you.`;
 }
 
-// Returns a personalized Calendly link with name & email
 async function bookMeeting({ userName, userEmail }) {
   try {
     const personalizedLink = `${CALENDLY_EVENT_LINK}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
-    return `Great! I've prepared a personalized booking link for you: ${personalizedLink}. Ehsan has been notified of your request.`;
+    return `Thank you, ${userName}! Here is your personalized booking link: ${personalizedLink}\n\nEhsan has been notified of your request.`;
   } catch (err) {
     console.error("Error in bookMeeting:", err);
-    return `I'm sorry, there was an error creating your booking link. Please use this link directly: ${CALENDLY_EVENT_LINK}`;
+    return `I'm sorry, there was an error creating your personalized booking link. Please use the general link directly: ${CALENDLY_EVENT_LINK}`;
   }
 }
 
@@ -40,8 +38,11 @@ async function captureLead(message) {
 
   if (foundEmail || foundPhone) {
     const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
-    const subject = `New Lead Captured from Your Portfolio Bot!`;
-    const body = `<p>Hi Ehsan,</p><p>Your AI assistant captured a new lead from your website.</p><p><strong>Contact Info:</strong> ${contactInfo}</p><p><strong>Message:</strong> "${message}"</p>`;
+    const subject = `New Lead Captured from Portfolio Bot`;
+    const body = `<p>Hi Ehsan,</p>
+                  <p>Your AI assistant captured a new lead from your website.</p>
+                  <p><strong>Contact Info:</strong> ${contactInfo}</p>
+                  <p><strong>Message:</strong> "${message}"</p>`;
 
     try {
       await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject, html: body });
@@ -90,7 +91,6 @@ exports.handler = async function(event, context) {
 
     await captureLead(message);
 
-    
     const knowledgeBase = `
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
