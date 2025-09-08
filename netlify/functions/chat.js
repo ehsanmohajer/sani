@@ -4,143 +4,25 @@ const { Resend } = require('resend');
 // --- API KEYS FROM NETLIFY ENVIRONMENT ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY;
 const CALENDLY_EVENT_LINK = process.env.CALENDLY_EVENT_LINK;
 
 // --- INITIALIZE SERVICES ---
 if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set.");
 if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not set.");
-if (!CALENDLY_API_KEY) throw new Error("CALENDLY_API_KEY not set.");
 if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI ---
-async function getEventTypeUri() {
-  try {
-    console.log("[DEBUG] Attempting to get Event Type URI...");
-    console.log(`[DEBUG] Using Calendly Key starting with: ${CALENDLY_API_KEY.substring(0, 8)}...`);
-
-    const userResponse = await fetch('https://api.calendly.com/users/me', {
-      headers: {
-        Authorization: `Bearer ${CALENDLY_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!userResponse.ok) {
-      const errorText = await userResponse.text();
-      throw new Error(`Failed to fetch user from Calendly. Status: ${userResponse.status}. Body: ${errorText}`);
-    }
-
-    const userData = await userResponse.json();
-    const userUri = userData.resource.uri;
-    console.log(`[DEBUG] Successfully fetched user URI: ${userUri}`);
-
-    // ✅ Get event types for the user
-    const eventTypesResponse = await fetch(`https://api.calendly.com/event_types?user=${userUri}`, {
-      headers: {
-        Authorization: `Bearer ${CALENDLY_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!eventTypesResponse.ok) {
-      const errorText = await eventTypesResponse.text();
-      throw new Error(`Failed to fetch event types. Status: ${eventTypesResponse.status}. Body: ${errorText}`);
-    }
-
-    const eventTypesData = await eventTypesResponse.json();
-    console.log(`[DEBUG] Found ${eventTypesData.collection.length} event types for user.`);
-
-    const eventSlug = CALENDLY_EVENT_LINK.split('/').pop();
-    console.log(`[DEBUG] Searching for event slug: '${eventSlug}'`);
-
-    const eventType = eventTypesData.collection.find(et => et.slug === eventSlug);
-    if (!eventType) {
-      const foundSlugs = eventTypesData.collection.map(et => et.slug).join(', ');
-      console.error(`[DEBUG] Event slug '${eventSlug}' NOT FOUND. Available slugs: [${foundSlugs}]`);
-      throw new Error(`Event type with slug '${eventSlug}' not found.`);
-    }
-
-    console.log(`[DEBUG] Successfully found event type URI: ${eventType.uri}`);
-    return eventType.uri;
-
-  } catch (error) {
-    console.error("[DEBUG] Error in getEventTypeUri:", error);
-    throw error;
-  }
-}
-
-// --- CALENDLY SCHEDULING FUNCTIONS ---
+// --- SIMPLIFIED CALENDLY FUNCTIONS ---
 async function getAvailableTimes() {
-  try {
-    console.log("[DEBUG] Generating scheduling link for available times...");
-    const eventTypeUri = await getEventTypeUri();
-
-    const bookingResponse = await fetch('https://api.calendly.com/scheduling_links', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${CALENDLY_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        owner: eventTypeUri,
-        owner_type: "EventType",
-        max_event_count: 1
-      })
-    });
-
-    if (!bookingResponse.ok) {
-      const errorText = await bookingResponse.text();
-      throw new Error(`Failed to generate scheduling link. Status: ${bookingResponse.status}. Body: ${errorText}`);
-    }
-
-    const bookingData = await bookingResponse.json();
-    const bookingUrl = bookingData.resource.booking_url;
-    console.log(`[DEBUG] Scheduling link generated: ${bookingUrl}`);
-
-    return `Here is the scheduling link to pick a time: ${bookingUrl}`;
-
-  } catch (error) {
-    console.error("[DEBUG] Error in getAvailableTimes:", error.message);
-    return "I'm sorry, I cannot fetch available times right now. Please use this link to schedule: " + CALENDLY_EVENT_LINK;
-  }
+  console.log("[DEBUG] Returning Calendly link for booking...");
+  return `Great! Here’s Ehsan’s Calendly link to choose a time that works for you: ${CALENDLY_EVENT_LINK}. Once you’ve booked, please provide your full name and email so we can confirm your meeting.`;
 }
 
-async function bookMeeting({ dateTime, userEmail, userName }) {
-  try {
-    console.log("[DEBUG] Creating scheduling link for booking...");
-    const eventTypeUri = await getEventTypeUri();
-
-    const bookingResponse = await fetch('https://api.calendly.com/scheduling_links', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${CALENDLY_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        owner: eventTypeUri,
-        owner_type: "EventType",
-        max_event_count: 1
-      })
-    });
-
-    if (!bookingResponse.ok) throw new Error('Failed to create Calendly booking link.');
-
-    const bookingData = await bookingResponse.json();
-    const bookingUrl = bookingData.resource.booking_url;
-
-    const finalUrl = `${bookingUrl}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
-    console.log(`[DEBUG] Final booking URL: ${finalUrl}`);
-
-    return `Great! I've prepared a booking link for you to confirm the time: ${finalUrl}. Ehsan has also been notified of your request.`;
-
-  } catch (error) {
-    console.error("Error booking Calendly meeting:", error.message);
-    return "I'm sorry, there was an error with the booking system. Please use this link to book directly: " + CALENDLY_EVENT_LINK;
-  }
+async function bookMeeting({ userName, userEmail }) {
+  console.log("[DEBUG] Booking via Calendly API disabled. Returning direct link.");
+  return `You can finalize your meeting directly here: ${CALENDLY_EVENT_LINK}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
 }
 
 // --- LEAD CAPTURE FUNCTION ---
@@ -149,12 +31,14 @@ async function captureLead(message) {
   const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
   const foundEmail = message.match(emailRegex);
   const foundPhone = message.match(phoneRegex);
+
   if (foundEmail || foundPhone) {
     const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
     const subject = `New Lead Captured from Your Portfolio Bot!`;
-    const body = `<p>Hi Ehsan,</p><p>Your AI assistant captured a new lead from your website.</p><p><strong>Contact Info:</strong> ${contactInfo}</p><p><strong>Full Message:</strong> "${message}"</p><p>You may want to follow up with them soon.</p>`;
+    const body = `<p>Hi Ehsan,</p><p>Your AI assistant captured a new lead from your website.</p><p><strong>Contact Info:</strong> ${contactInfo}</p><p><strong>Message:</strong> "${message}"</p>`;
+
     try {
-      await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject: subject, html: body });
+      await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject, html: body });
       console.log("Lead capture email sent successfully.");
     } catch (error) {
       console.error("Error sending lead capture email:", error);
@@ -162,26 +46,22 @@ async function captureLead(message) {
   }
 }
 
-// --- TOOLS DECLARATION FOR AI ---
+// --- AI TOOLS ---
 const tools = [
   {
     functionDeclarations: [
-      {
-        name: "getAvailableTimes",
-        description: "Gets Ehsan's next 5 available meeting slots via Calendly."
-      },
-      {
-        name: "bookMeeting",
-        description: "Books a meeting in Ehsan's calendar using Calendly link.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            dateTime: { type: "STRING", description: "The ISO 8601 string of the chosen date and time." },
-            userEmail: { type: "STRING", description: "User's email address." },
-            userName: { type: "STRING", description: "User's full name." }
-          },
-          required: ["dateTime", "userEmail", "userName"]
-        }
+      { name: "getAvailableTimes", description: "Shares Ehsan's Calendly link for booking a 30-minute meeting." },
+      { 
+        name: "bookMeeting", 
+        description: "Provides the Calendly link to finalize a meeting.", 
+        parameters: { 
+          type: "OBJECT", 
+          properties: { 
+            userName: { type: "STRING", description: "User's full name." }, 
+            userEmail: { type: "STRING", description: "User's email address." } 
+          }, 
+          required: ["userName", "userEmail"] 
+        } 
       }
     ]
   }
@@ -313,7 +193,7 @@ exports.handler = async function(event, context) {
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Understood. I am ready to assist and can schedule meetings using my tools." }] }
+        { role: "model", parts: [{ text: "Understood. I am ready to assist and can share the Calendly link." }] }
       ]
     });
 
