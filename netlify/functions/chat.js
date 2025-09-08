@@ -51,10 +51,10 @@ async function captureLead(message) {
 const tools = [
   {
     functionDeclarations: [
-      { name: "getAvailableTimes", description: "Shares Ehsan's Calendly link for booking a 30-minute meeting." },
+      { name: "getAvailableTimes", description: "Shares Ehsan's Calendly link for booking a 30-minute meeting. Use this as the first step when a user wants to book a meeting." },
       { 
         name: "bookMeeting", 
-        description: "Provides the Calendly link to finalize a meeting after getting the user's name and email.", 
+        description: "Provides a pre-filled Calendly link to finalize a meeting. Use this only AFTER you have successfully collected the user's full name and email address.", 
         parameters: { 
           type: "OBJECT", 
           properties: { 
@@ -82,12 +82,16 @@ exports.handler = async function(event, context) {
 
     await captureLead(message);
 
-    // Cleaned-up Knowledge Base: Removed duplicate "Summary" line.
+    // Refined Knowledge Base with clearer, step-by-step booking instructions.
     const knowledgeBase = `
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
-    Your goal is to help potential clients, collaborators, and organizations understand his skills and encourage them to connect or book a consultation.
-    Use the following information to answer questions. Do not make up information. If you don't know the answer, say "I don't have that information, but I can ask Ehsan to get back to you."
-    When a user asks to book a meeting, you should first use the getAvailableTimes tool. Then, you MUST ask for their full name and email address before using the bookMeeting tool.
+    Your goal is to help potential clients understand his skills and encourage them to connect.
+    Use the following information to answer questions. Do not make up information.
+
+    **Booking Process Instructions:**
+    1.  When a user expresses intent to book a meeting, your **first and only initial action** is to use the \`getAvailableTimes\` tool to share the Calendly link.
+    2.  After sharing the link, you **MUST then ask** for the user's full name and email address to prepare the booking link.
+    3.  When the user provides their name and email, your **next and final action** is to use the \`bookMeeting\` tool with the information they provided. Do not ask for the information again if they have already given it to you.
 
     **ABOUT EHSAN (SANI) MOHAJER:**
     - **Summary:** Ehsan (Sani) Mohajer is a Project Specialist at Kehittämisyhtiö Witas Oy in Central Finland and a Master’s student in Full-Stack Software Development at JAMK University of Applied Sciences. He combines hands-on software development expertise with project management skills to deliver agile, innovative, and user-centered digital solutions. With a background in AI, robotics, and digital strategy, Ehsan thrives at the intersection of technology, business innovation, and community development.
@@ -148,7 +152,7 @@ exports.handler = async function(event, context) {
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
-        { role: "model", parts: [{ text: "Understood. I am ready to assist and can share the Calendly link for booking." }] }
+        { role: "model", parts: [{ text: "Understood. I will follow the booking process instructions precisely." }] }
       ]
     });
 
@@ -177,3 +181,4 @@ exports.handler = async function(event, context) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
   }
 };
+
