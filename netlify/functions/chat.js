@@ -88,7 +88,7 @@ async function getAvailableTimes() {
       body: JSON.stringify({
         owner: eventTypeUri,
         owner_type: "EventType",
-        max_event_count: 5
+        max_event_count: 1
       })
     });
 
