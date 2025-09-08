@@ -4,97 +4,114 @@ const { Resend } = require('resend');
 // --- API KEYS FROM NETLIFY ENVIRONMENT ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY;
+const CALENDLY_EVENT_LINK = process.env.CALENDLY_EVENT_LINK;
 
 // --- INITIALIZE SERVICES ---
-if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY environment variable not set.");
-if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY environment variable not set.");
+if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not set.");
+if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not set.");
+if (!CALENDLY_API_KEY) throw new Error("CALENDLY_API_KEY not set.");
+if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// --- YOUR AVAILABILITY SCHEDULE (EEST Timezone) ---
-// 0=Sun, 1=Mon, 2=Tue, etc. Times are in 24-hour format.
-const availability = {
-  // Mondays 14:00 - 16:00
-  1: { start: 14, end: 16 },
-  // Wednesdays 10:00 - 12:00
-  3: { start: 10, end: 12 },
-  // Thursdays 15:00 - 17:00
-  4: { start: 15, end: 17 },
-};
-const meetingDurationMinutes = 30;
+// --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI (V2) ---
+async function getEventTypeUri() {
+    try {
+        // 1. Get the user's URI from Calendly's API
+        const userResponse = await fetch('https://api.calendly.com/v2/users/me', {
+            headers: { 'Authorization': `Bearer ${CALENDLY_API_KEY}` }
+        });
+        if (!userResponse.ok) throw new Error('Failed to fetch user from Calendly.');
+        const userData = await userResponse.json();
+        const userUri = userData.resource.uri;
 
-// --- SCHEDULING HELPER FUNCTIONS ---
-function getAvailableTimes() {
-  const slots = [];
-  // Use a specific date for consistent testing if needed, otherwise use current time
-  const now = new Date(); 
-  now.toLocaleString('en-US', { timeZone: 'Europe/Helsinki' });
+        // 2. Get the user's available event types
+        const eventTypesResponse = await fetch(`https://api.calendly.com/v2/event_types?user=${userUri}`, {
+             headers: { 'Authorization': `Bearer ${CALENDLY_API_KEY}` }
+        });
+        if (!eventTypesResponse.ok) throw new Error('Failed to fetch event types from Calendly.');
+        const eventTypesData = await eventTypesResponse.json();
 
-  for (let i = 0; i < 14; i++) {
-    const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
-    const dayOfWeek = date.getDay();
+        // 3. Find the specific event type by its unique name (slug) from your event link
+        const eventSlug = CALENDLY_EVENT_LINK.split('/').pop();
+        const eventType = eventTypesData.collection.find(et => et.slug === eventSlug);
+        if (!eventType) throw new Error(`Event type with slug '${eventSlug}' not found.`);
 
-    if (availability[dayOfWeek]) {
-      const { start, end } = availability[dayOfWeek];
-      for (let hour = start; hour < end; hour++) {
-        for (let minute = 0; minute < 60; minute += meetingDurationMinutes) {
-          const slot = new Date(date);
-          slot.setHours(hour, minute, 0, 0);
-          if (slot > now && slots.length < 5) { // Find the next 5 slots
-            slots.push(slot.toISOString());
-          }
-        }
-      }
+        return eventType.uri;
+    } catch (error) {
+        console.error("Error getting Calendly Event Type URI:", error);
+        throw error;
     }
+}
+
+// --- CALENDLY SCHEDULING FUNCTIONS (V2 API) ---
+async function getAvailableTimes() {
+  try {
+    const eventTypeUri = await getEventTypeUri();
+    const startTime = new Date().toISOString();
+    const params = new URLSearchParams({
+        start_time: startTime,
+        event_type: eventTypeUri
+    });
+
+    const slotsResponse = await fetch(`https://api.calendly.com/v2/event_type_available_times?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CALENDLY_API_KEY}` }
+    });
+
+    if (!slotsResponse.ok) throw new Error('Failed to fetch available times from Calendly V2 API.');
+    const slotsData = await slotsResponse.json();
+    
+    // Return the first 5 available time slots
+    return slotsData.collection.slice(0, 5).map(slot => slot.start_time);
+  } catch (error) {
+    console.error("Error getting Calendly times:", error.message);
+    return "I'm sorry, I'm having trouble accessing the calendar right now. Please try again in a moment.";
   }
-  return slots;
 }
 
 async function bookMeeting({ dateTime, userEmail, userName }) {
-    const meetingTime = new Date(dateTime);
-    const formattedTime = meetingTime.toLocaleString('en-GB', { 
-        timeZone: 'Europe/Helsinki',
-        dateStyle: 'full', 
-        timeStyle: 'short' 
-    });
-
-    const subject = `New Meeting Booked: Consultation with ${userName}`;
-    const body = `<p>Hi Ehsan,</p><p>Your AI assistant has successfully booked a new meeting.</p><p><strong>Name:</strong> ${userName}</p><p><strong>Email:</strong> ${userEmail}</p><p><strong>Time:</strong> ${formattedTime} (EEST)</p><p>Please send a calendar invite to confirm.</p>`;
-    
     try {
-        await resend.emails.send({
-            from: 'booking@resend.dev',
-            to: 'ehsanmohajer066@gmail.com',
-            subject: subject,
-            html: body,
+        const eventTypeUri = await getEventTypeUri();
+        const bookingResponse = await fetch('https://api.calendly.com/v2/scheduling_links', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CALENDLY_API_KEY}` },
+            body: JSON.stringify({
+                max_event_count: 1,
+                owner: eventTypeUri,
+                owner_type: "EventType"
+            })
         });
-        return `Successfully booked a ${meetingDurationMinutes}-minute meeting for ${userName} at ${formattedTime}. I have sent a confirmation request to Ehsan.`;
+
+        if (!bookingResponse.ok) throw new Error('Failed to create Calendly booking link.');
+        const bookingData = await bookingResponse.json();
+        const bookingUrl = bookingData.resource.booking_url;
+
+        // Pre-fill the user's details in the link for a smoother experience
+        const finalUrl = `${bookingUrl}?name=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}`;
+
+        return `Great! I've prepared a booking link for you to confirm the time. Please use this to finalize your meeting: ${finalUrl}. Ehsan has also been notified of your request.`;
     } catch (error) {
-        console.error("Error sending booking email:", error);
-        return "I'm sorry, there was an error with the booking system. Please try again later.";
+        console.error("Error booking Calendly meeting:", error.message);
+        return "I'm sorry, there was an error with the booking system. Please use this link to book directly: " + CALENDLY_EVENT_LINK;
     }
 }
+
 
 // --- LEAD CAPTURE HELPER FUNCTION ---
 async function captureLead(message) {
   const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
   const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-
   const foundEmail = message.match(emailRegex);
   const foundPhone = message.match(phoneRegex);
-
   if (foundEmail || foundPhone) {
     const contactInfo = foundEmail ? `Email: ${foundEmail[0]}` : `Phone: ${foundPhone[0]}`;
     const subject = `New Lead Captured from Your Portfolio Bot!`;
     const body = `<p>Hi Ehsan,</p><p>Your AI assistant captured a new lead from your website.</p><p><strong>Contact Info:</strong> ${contactInfo}</p><p><strong>Full Message:</strong> "${message}"</p><p>You may want to follow up with them soon.</p>`;
     try {
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: 'ehsanmohajer066@gmail.com',
-        subject: subject,
-        html: body,
-      });
+      await resend.emails.send({ from: 'onboarding@resend.dev', to: 'ehsanmohajer066@gmail.com', subject: subject, html: body, });
       console.log("Lead capture email sent successfully.");
     } catch (error) {
       console.error("Error sending lead capture email:", error);
@@ -103,32 +120,10 @@ async function captureLead(message) {
 }
 
 // --- DEFINE TOOLS FOR THE GEMINI MODEL ---
-const tools = [
-  {
-    functionDeclarations: [
-      { name: "getAvailableTimes", description: "Gets Ehsan's next 5 available 30-minute meeting slots." },
-      {
-        name: "bookMeeting",
-        description: "Books a 30-minute meeting in Ehsan's calendar for a user.",
-        parameters: {
-          type: "OBJECT",
-          properties: {
-            dateTime: { type: "STRING", description: "The ISO 8601 string of the chosen date and time for the meeting." },
-            userEmail: { type: "STRING", description: "The user's email address." },
-            userName: { type: "STRING", description: "The user's full name." },
-          },
-          required: ["dateTime", "userEmail", "userName"],
-        },
-      },
-    ],
-  },
-];
+const tools = [ { functionDeclarations: [ { name: "getAvailableTimes", description: "Gets Ehsan's next 5 available 30-minute meeting slots from his live calendar." }, { name: "bookMeeting", description: "Books a 30-minute meeting in Ehsan's calendar for a user by generating a confirmation link.", parameters: { type: "OBJECT", properties: { dateTime: { type: "STRING", description: "The ISO 8601 string of the chosen date and time for the meeting." }, userEmail: { type: "STRING", description: "The user's email address." }, userName: { type: "STRING", description: "The user's full name." }, }, required: ["dateTime", "userEmail", "userName"], }, }, ], }, ];
 
 // --- INITIALIZE THE MODEL WITH TOOLS ---
-const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash-latest",
-    tools: tools
-});
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", tools: tools });
 
 // --- MAIN SERVERLESS FUNCTION ---
 exports.handler = async function (event, context) {
@@ -148,7 +143,7 @@ exports.handler = async function (event, context) {
     You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients, collaborators, and organizations understand his skills and encourage them to connect or book a consultation.
     Use the following information to answer questions. Do not make up information. If you don't know the answer, say "I don't have that information, but I can ask Ehsan to get back to you."
-    When asked to book a meeting, you MUST first ask for the user's full name and email address before using the bookMeeting tool.
+    When asked to book a meeting, you MUST first use the getAvailableTimes tool, present the options to the user, and after they choose one, you MUST ask for their full name and email address before using the bookMeeting tool.
 
     **ABOUT EHSAN (SANI) MOHAJER:**
     - **Summary:** Ehsan (Sani) Mohajer is a Project Specialist at Kehittämisyhtiö Witas Oy in Central Finland and a Master’s student in Full-Stack Software Development at JAMK University of Applied Sciences. He combines hands-on software development expertise with project management skills to deliver agile, innovative, and user-centered digital solutions. With a background in AI, robotics, and digital strategy, Ehsan thrives at the intersection of technology, business innovation, and community development.
@@ -207,7 +202,7 @@ exports.handler = async function (event, context) {
     `;
     
     const chat = model.startChat({
-        history: [{ role: "user", parts: [{ text: knowledgeBase }] }, { role: "model", parts: [{ text: "Understood. I am ready to assist potential clients and can book meetings using my available tools." }] }],
+        history: [{ role: "user", parts: [{ text: knowledgeBase }] }, { role: "model", parts: [{ text: "Understood. I am ready to assist potential clients and can book meetings by checking the live calendar using my available tools." }] }],
     });
 
     let result = await chat.sendMessage(message);
@@ -223,7 +218,7 @@ exports.handler = async function (event, context) {
         for (const call of functionCalls) {
             let apiResult;
             if (call.name === "getAvailableTimes") {
-                apiResult = getAvailableTimes();
+                apiResult = await getAvailableTimes();
             } else if (call.name === "bookMeeting") {
                 apiResult = await bookMeeting(call.args);
             }
