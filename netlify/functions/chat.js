@@ -163,25 +163,26 @@ exports.handler = async function (event, context) {
 
         let result = await chat.sendMessage(message);
 
-        while (true) {
-            const functionCalls = result.response.functionCalls();
-            if (!functionCalls || functionCalls.length === 0) break;
+       while (true) {
+    const functionCalls = result.response.functionCalls();
+    if (!functionCalls || functionCalls.length === 0) break;
 
-            const toolResults = [];
-            for (const call of functionCalls) {
-                let apiResult;
-                if (call.name === "getAvailableTimes") apiResult = await getAvailableTimes();
-                else if (call.name === "bookMeeting") apiResult = await bookMeeting(call.args);
-
-                toolResults.push({
-                    functionName: call.name,
-                    response: { result: apiResult },
-                });
-            }
-
-            result = await chat.sendMessage(JSON.stringify([{ functionResponse: toolResults }]));
+    for (const call of functionCalls) {
+        let apiResult = "";
+        if (call.name === "getAvailableTimes") {
+            apiResult = await getAvailableTimes();
+        } else if (call.name === "bookMeeting") {
+            apiResult = await bookMeeting(call.args);
         }
 
+        // Send the result back to the model
+        result = await chat.sendMessage({
+            role: "function",
+            name: call.name,
+            content: apiResult
+        });
+    }
+}
         const text = result.response.text();
         return { statusCode: 200, headers, body: JSON.stringify({ reply: text }) };
 
