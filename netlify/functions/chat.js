@@ -16,14 +16,13 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI (V2) ---
 // --- HELPER FUNCTION TO GET CALENDLY EVENT TYPE URI ---
 async function getEventTypeUri() {
   try {
     console.log("[DEBUG] Attempting to get Event Type URI...");
     console.log(`[DEBUG] Using Calendly Key starting with: ${CALENDLY_API_KEY.substring(0, 8)}...`);
 
-    // ✅ Use v1 endpoint for "users/me"
+    // Use v2 endpoint for "users/me"
     const userResponse = await fetch('https://api.calendly.com/users/me', {
       headers: {
         Authorization: `Bearer ${CALENDLY_API_KEY}`,
@@ -40,8 +39,8 @@ async function getEventTypeUri() {
     const userUri = userData.resource.uri;
     console.log(`[DEBUG] Successfully fetched user URI: ${userUri}`);
 
-    // ✅ Event types are still v2
-    const eventTypesResponse = await fetch(`https://api.calendly.com/v2/event_types?user=${userUri}`, {
+    // ✅ Correct event_types path
+    const eventTypesResponse = await fetch(`https://api.calendly.com/event_types?user=${encodeURIComponent(userUri)}`, {
       headers: {
         Authorization: `Bearer ${CALENDLY_API_KEY}`,
         'Content-Type': 'application/json'
