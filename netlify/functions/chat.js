@@ -14,10 +14,9 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// UPDATED: Using the latest stable model "gemini-1.5-flash" for reliability.
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// --- LEAD CAPTURE FUNCTION (Unchanged) ---
+// --- LEAD CAPTURE FUNCTION ---
 async function captureLead(message) {
   const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/;
   const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
@@ -51,7 +50,6 @@ exports.handler = async function(event, context) {
     await captureLead(message);
 
     const knowledgeBase = 
-      const knowledgeBase = 
       ` You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
     Use the following information to answer questions. Do not make up information.
@@ -135,3 +133,4 @@ exports.handler = async function(event, context) {
   }
 };
 
+  
