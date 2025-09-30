@@ -13,8 +13,9 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
-// The model is initialized without tools, making it simpler
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+// UPDATED: Using the stable "gemini-pro" model name to fix the 404 error
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // --- LEAD CAPTURE FUNCTION (Unchanged) ---
 async function captureLead(message) {
@@ -49,9 +50,8 @@ exports.handler = async function(event, context) {
 
     await captureLead(message);
 
-    // --- KNOWLEDGE BASE (Simplified with Direct Booking Link) ---
-    const knowledgeBase = `
-    You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
+    const knowledgeBase = 
+      ` You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
     Use the following information to answer questions. Do not make up information.
     
@@ -133,3 +133,4 @@ exports.handler = async function(event, context) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to get response from AI' }) };
   }
 };
+
