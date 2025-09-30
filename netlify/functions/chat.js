@@ -14,8 +14,8 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// UPDATED: Using the latest stable model name as a final check.
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+// UPDATED: Using the latest stable model "gemini-1.5-flash" for reliability.
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // --- LEAD CAPTURE FUNCTION (Unchanged) ---
 async function captureLead(message) {
@@ -51,7 +51,7 @@ exports.handler = async function(event, context) {
     await captureLead(message);
 
     const knowledgeBase = 
-      
+      const knowledgeBase = 
       ` You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
     Use the following information to answer questions. Do not make up information.
@@ -115,6 +115,7 @@ exports.handler = async function(event, context) {
     - Description: A key innovation event in Central Finland where developers, students, and entrepreneurs co-create AI-powered products and services.
     - Availability: Open for new consulting and project collaborations from November 2025 onward, with focus areas in AI strategy, chatbot development, full-stack applications, and digital innovation.
     `;
+
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
