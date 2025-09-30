@@ -14,8 +14,8 @@ if (!CALENDLY_EVENT_LINK) throw new Error("CALENDLY_EVENT_LINK not set.");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const resend = new Resend(RESEND_API_KEY);
 
-// UPDATED: Using the stable "gemini-pro" model name to fix the 404 error
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+// UPDATED: Using the latest stable model name as a final check.
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
 // --- LEAD CAPTURE FUNCTION (Unchanged) ---
 async function captureLead(message) {
@@ -114,7 +114,6 @@ exports.handler = async function(event, context) {
     - Description: A key innovation event in Central Finland where developers, students, and entrepreneurs co-create AI-powered products and services.
     - Availability: Open for new consulting and project collaborations from November 2025 onward, with focus areas in AI strategy, chatbot development, full-stack applications, and digital innovation.
     `;
-
     const chat = model.startChat({
       history: [
         { role: "user", parts: [{ text: knowledgeBase }] },
