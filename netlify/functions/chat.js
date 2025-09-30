@@ -51,6 +51,7 @@ exports.handler = async function(event, context) {
     await captureLead(message);
 
     const knowledgeBase = 
+      
       ` You are a friendly and professional AI assistant for Ehsan (Sani) Mohajer.
     Your goal is to help potential clients understand his skills and encourage them to connect.
     Use the following information to answer questions. Do not make up information.
